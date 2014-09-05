@@ -1,10 +1,11 @@
-	var slotSize = 5; // how many minutes does a single slot on the grid equate to?
-	var selectionSize = 12;
+	// var slotSize = 5; // how many minutes does a single slot on the grid equate to?
+	// var selectionSize = 12;
+	var calGridCfg = {};
 
 	function extractTimeFromDateDescriptor(dateDescriptor, bump) {
 		var t = Date.parse(dateDescriptor);
 		if (bump) {
-			t += slotSize * 60 * 1000;
+			t += calGridCfg.slotSize * 60 * 1000;
 		}
 		var d = new Date(t);
 		// console.log(dateDescriptor + " -> [" + d + "]");
@@ -33,7 +34,7 @@
 		var startSecs = startDate.getTime() / 1000;
 		var endSecs = endDate.getTime() / 1000;
 		var diffMinutes = (endSecs - startSecs) / 60;
-		var slots = diffMinutes / slotSize;
+		var slots = diffMinutes / calGridCfg.slotSize;
 		console.log(diffMinutes + " separates these; corresponds to [" + slots + "]");
 		return slots;
 	}
@@ -42,11 +43,11 @@
 	function adjustDateForSlotSize(d, dir) {
 		if (d == null) { return d; }
 
-		var minutesOff = d.getMinutes() % slotSize;
+		var minutesOff = d.getMinutes() % calGridCfg.slotSize;
 
 		if (minutesOff != 0) {
 			if (dir == 1) { // forward
-				minuteAdjustment = slotSize - minutesOff;
+				minuteAdjustment = calGridCfg.slotSize - minutesOff;
 			} else { // backwards
 				minuteAdjustment = -1 * minutesOff;
 			}
@@ -75,7 +76,7 @@
 
 	function isBlockFree(block) {
 		var whyFailed = "";
-		if (block.length != selectionSize) {
+		if (block.length != calGridCfg.selectionSize) {
 			whyFailed = "too close to end of 10pm hard limit";
 		} else {
 			var isWholeBlockAvail = true;
@@ -155,12 +156,22 @@
 		blockOffTime(new Date(2014, 8, 2, 14, 5), new Date(2014, 8, 2, 14, 17), "booked", "2:05-2:17");
 	}
 
-	function performGridSetup() {
+	function setConfigDefault(param, val) {
+		if (!calGridCfg[param]) {
+			calGridCfg[param] = val;
+		}
+	}
+
+	function performGridSetup(configObj) {
+		calGridCfg = configObj ? configObj : {};	
+		setConfigDefault("slotSize", 5);
+		setConfigDefault("selectionSize", 12);
+
 		markClosedTimes();
 		markAppointmentTimes();
 
 		$(".gridSlotRight").click(function (evt) {
-			var completeBlock = getElPlusSibs(this, selectionSize);
+			var completeBlock = getElPlusSibs(this, calGridCfg.selectionSize);
 			var outcomeBlob = isBlockFree(completeBlock);
 
 			if (outcomeBlob.status) {
@@ -168,7 +179,7 @@
 				console.log("writeback please!");
 
 				var firstSlotInfo = $(this).attr("data-slotInfo");
-				var lastSlotInfo = selectionSize == 1 ? firstSlotInfo : $(this).nextAll().slice(0,selectionSize-1).last().attr("data-slotInfo");
+				var lastSlotInfo = calGridCfg.selectionSize == 1 ? firstSlotInfo : $(this).nextAll().slice(0,calGridCfg.selectionSize-1).last().attr("data-slotInfo");
 
 				$("#demofield").val("END NEEDS FIXING:" + firstSlotInfo + " - " + lastSlotInfo);
 				$("#ems").dialog("close");
@@ -178,10 +189,10 @@
 		});
 
 		$(".gridSlotRight").hover(function (evt) {
-			var completeBlock = getElPlusSibs(this, selectionSize);
+			var completeBlock = getElPlusSibs(this, calGridCfg.selectionSize);
 
 			var firstSlotInfo = $(this).attr("data-slotInfo");
-			var lastSlotInfo = selectionSize == 1 ? firstSlotInfo : $(this).nextAll().slice(0,selectionSize-1).last().attr("data-slotInfo");
+			var lastSlotInfo = calGridCfg.selectionSize == 1 ? firstSlotInfo : $(this).nextAll().slice(0,calGridCfg.selectionSize-1).last().attr("data-slotInfo");
 
 			if (evt.type == "mouseenter") {
 				var outcomeBlob = isBlockFree(completeBlock);

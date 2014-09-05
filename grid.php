@@ -118,7 +118,6 @@ function getParam($paramName, $defaultVal) {
 	return isset($_REQUEST[$paramName]) ? $_REQUEST[$paramName] : $defaultVal;
 }
 
-
 // look in params for some ways to customize the display
 $screenOffset = max(getParam("screensAhead", 0), 0);
 $chunkSize = getParam("chunkSize", 5);
