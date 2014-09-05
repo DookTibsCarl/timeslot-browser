@@ -1,0 +1,73 @@
+#calHolder {
+	width: 100%;
+}
+
+.times {
+	width: 10%;
+	float:left;
+}
+
+.dayGrid {
+	width: 90%;
+	float:left;
+}
+
+.dayCol {
+	float: left;
+}
+
+.gridSlot {
+	height: 4px;
+	font-size: 12px;
+}
+
+.gridSlotRight {
+	border-style: solid;
+	border-right: 0px;
+	border-top: 0px;
+	border-bottom: 0px;
+	border-color: black;
+	cursor: pointer;
+}
+
+.gridSlota {
+	background-color: #DDDDDD ;
+}
+
+.gridSlotb {
+	background-color: #BBBBBB;
+}
+
+.hovering {
+	background-color:purple;
+	color: white;
+	-webkit-user-select: none; /* Chrome/Safari */        
+	-moz-user-select: none; /* Firefox */
+	-ms-user-select: none; /* IE10+ */
+
+	/* Rules below not implemented in browsers yet */
+	-o-user-select: none;
+	user-select: none;
+}
+
+.closed {
+	background-color: red;
+}
+
+.booked {
+	background-color: cyan;
+}
+
+.gridHourBreak {
+	border-top: 1px;
+}
+
+#highlighter {
+	background-color: orange;
+	display:none;
+	position: absolute;
+}
+
+.debugStatus {
+	display: none;
+}

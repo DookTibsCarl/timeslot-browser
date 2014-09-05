@@ -1,103 +1,34 @@
 <?php 
 date_default_timezone_set("America/Chicago");
 
-class TibsCal {
-	function __construct() {
-	}
+/*
+ * You must include:
+ *	# JQuery
+ *	# grid.js
+ *	# grid.css
+ *
+ * Or things will not look/function very well...
+ *
+ * This is intended to be used in a JQuery modal dialog but it could easily be modified for other contexts
+ *
+ */
 
-	function setupStyle() {
-		$style = <<<STYLE
-<style>
-	#calHolder {
-		width: 100%;
-		// height: 100%;
-		// border-style: solid;
-	}
-	
-	.times {
-		width: 10%;
-		// height: 100%;
-		// background-color: red;
-		float:left;
-		// overflow: hidden;
-	}
-
-	.dayGrid {
-		width: 90%;
-		// height: 100%;
-		// background-color: green;
-		float:left;
-		// overflow: hidden;
-	}
-
-	.dayCol {
-		float: left;
-	}
-
-	.gridSlot {
-		height: 14px;
-		font-size: 12px;
-	}
-
-	.gridSlotRight {
-		border-style: solid;
-		border-right: 0px;
-		border-top: 0px;
-		border-bottom: 0px;
-		border-color: black;
-		cursor: pointer;
-	}
-
-	.gridSlot0 {
-		background-color: #DDDDDD ;
-	}
-
-	.gridSlot1 {
-		background-color: #BBBBBB;
-	}
-
-	.hovering {
-		background-color:purple;
-		color: white;
-	}
-
-	.closed {
-		background-color: red;
-	}
-
-	.booked {
-		background-color: cyan;
-		// overflow: hidden;
-	}
-
-	.gridHourBreak {
-		border-top: 1px;
-	}
-
-	#highlighter {
-		background-color: orange;
-		display:none;
-		position: absolute;
-	}
-</style>
-STYLE;
-		echo $style;
-	}
-
+class CalendarSlotPickerWidget {
 	function buildSingleDayGrid($startOfDay, $endOfDay, $slotSize, $header, $showStamp) {
 		if ($header == "default") {
 			$header = date("D, M d", $startOfDay);
 		}
 
-		$html = "<div class='gridSlot'>$header</div>";
+		$html = "<div class='gridSlot' style='height:15px'>$header</div>";
 		$stamp = $startOfDay;
 		$looper = 0;
 		while ($stamp <= $endOfDay) {
 			if ($showStamp) {
-				$html .= "<div class='gridSlot'>" . ($looper%4==0 ? date("h:i A", $stamp) : "&nbsp;") . "</div>";
+				$html .= "<div class='gridSlot'>" . ($looper%$this->alternatorSize==0 ? date("h:i A", $stamp) : "&nbsp;") . "</div>";
 			} else {
-				$hourBreaker = $looper%4==0 ? " gridHourBreak" : "";
-				$html .= "<div class='available gridSlot gridSlotRight gridSlot" . ($looper%2) . "$hourBreaker' data-slotInfo='" . date("Y-m-d,H:i", $stamp) . "'>&nbsp;</div>";
+				// $hourBreaker = $looper%4==0 ? " gridHourBreak" : "";
+				$hourBreaker = "";
+				$html .= "<div class='available gridSlot gridSlotRight gridSlot" . ($looper%$this->alternatorSize < ($this->alternatorSize/2) ? "a" : "b") . "$hourBreaker' data-dow='" . date("D", $stamp) . "' data-slotInfo='" . date("Y-m-d,H:i", $stamp) . "'>&nbsp;</div>";
 			}
 			$stamp += $slotSize * 60;
 			$looper++;
@@ -105,10 +36,21 @@ STYLE;
 		return $html;
 	}
 
-	function drawCal($weekAdvance, $days, $slotSize) {
-		$this->weekOffset = $weekAdvance;
-		$this->setupStyle();
-		// echo "drawing calendar with [$slotSize] minute slots, looking out [$days] days:<P>";
+	function buildPager($replacements) {
+		$rv = "";
+		foreach (Array("screensAhead", "chunkSize", "daysToShow", "alternatorSize", "hardCapStart", "hardCapEnd") as $param) {
+			if (isset($replacements[$param])) {
+				$rv .= ($rv == "" ? "?" : "&") . $param . "=" . $replacements[$param];
+			} else if (isset($_REQUEST[$param])) {
+				$rv .= ($rv == "" ? "?" : "&") . $param . "=" . $_REQUEST[$param];
+			}
+		}
+		return $rv;
+	}
+
+	function drawCal($screenAdvance, $days, $slotSize, $alternatorSize, $hardCapStart, $hardCapEnd, $popupPagerCallback) {
+		$this->alternatorSize = $alternatorSize;
+		$this->screenOffset = $screenAdvance;
 		
 		if (isset($_POST["mode"])) {
 			$this->mode = $_POST["mode"];
@@ -116,8 +58,8 @@ STYLE;
 			$this->mode = "unknown";
 		}
 
-		$startOfDay = strtotime("07:00:00");
-		$endOfDay = strtotime("21:59:59");
+		$startOfDay = strtotime($hardCapStart);
+		$endOfDay = strtotime($hardCapEnd);
 		$oneDay = 24 * 60 * 60;
 
 		// back up to Sunday
@@ -125,8 +67,8 @@ STYLE;
 		$startOfDay -= $oneDay * $daysAheadOfSunday;
 		$endOfDay -= $oneDay * $daysAheadOfSunday;
 
-		$startOfDay += $oneDay * $weekAdvance*7;
-		$endOfDay += $oneDay * $weekAdvance*7;
+		$startOfDay += $oneDay * $screenAdvance*$days;
+		$endOfDay += $oneDay * $screenAdvance*$days;
 
 		$timesHtml = $this->buildSingleDayGrid($startOfDay, $endOfDay, $slotSize, "&nbsp;", true);
 
@@ -144,17 +86,18 @@ STYLE;
 		$weekNav = "";
 
 		if ($this->mode == "popup") {
-			if ($this->weekOffset > 0) { $weekNav .= "<a href='#' onClick='reloadEmsForm(" . ($this->weekOffset-1) . ");'>Previous Week</a>"; } else { $weekNav .= "Previous Week"; }
+			if ($this->screenOffset > 0) { $weekNav .= "<a href='#' onClick='$popupPagerCallback(" . ($this->screenOffset-1) . ");'>Previous</a>"; } else { $weekNav .= "Previous"; }
 			$weekNav .= " | ";
-			$weekNav .= "<a href='#' onClick='reloadEmsForm(" . ($this->weekOffset+1) . ");'>Next Week</a>";
+			$weekNav .= "<a href='#' onClick='$popupPagerCallback(" . ($this->screenOffset+1) . ");'>Next</a>";
 		} else {
-			if ($this->weekOffset > 0) { $weekNav .= "<a href='?weeksAhead=" . ($this->weekOffset-1) . "'>Previous Week</a>"; } else { $weekNav .= "Previous Week"; }
+			if ($this->screenOffset > 0) { $weekNav .= "<a href='" . $this->buildPager(Array("screensAhead" => $this->screenOffset-1)) . "'>Previous</a>"; } else { $weekNav .= "Previous"; }
 			$weekNav .= " | ";
-			$weekNav .= "<a href='?weeksAhead=" . ($this->weekOffset+1) . "'>Next Week</a>";
+			$weekNav .= "<a href='" . $this->buildPager(Array("screensAhead" => $this->screenOffset+1)) . "'>Next</a>";
 		}
 
+$blah = $_REQUEST["popupPagerCallback"];
 		$html = <<<HTML
-<!-- <div><span id="debugStatus">status goes here ($this->mode)</span></div> -->
+<div><span id="debugStatus">status goes here ($this->mode) ($blah)</span></div>
 <div>$weekNav</div>
 <div id="calHolder">
 	<div class="times">
@@ -171,8 +114,20 @@ HTML;
 	}
 }
 
-$weekOffset = isset($_REQUEST["weeksAhead"]) ? max($_REQUEST["weeksAhead"], 0) : 0;
+function getParam($paramName, $defaultVal) {
+	return isset($_REQUEST[$paramName]) ? $_REQUEST[$paramName] : $defaultVal;
+}
 
-$tc = new TibsCal();
-$tc->drawCal($weekOffset, 7, 15);
+
+// look in params for some ways to customize the display
+$screenOffset = max(getParam("screensAhead", 0), 0);
+$chunkSize = getParam("chunkSize", 5);
+$daysToShow = getParam("daysToShow", 7);
+$alternatorSize = getParam("alternatorSize", 12);
+$hcStart = getParam("hardCapStart", "07:00:00");
+$hcEnd = getParam("hardCapEnd", "21:59:59");
+$popupPagerCallback = getParam("popupPagerCallback", "calendarPagerCallback");
+
+$tc = new CalendarSlotPickerWidget();
+$tc->drawCal($screenOffset, $daysToShow, $chunkSize, $alternatorSize, $hcStart, $hcEnd, $popupPagerCallback);
 ?>

@@ -1,5 +1,5 @@
-	var slotSize = 15; // how many minutes does a single slot on the grid equate to?
-	var selectionSize = 4; // say user wants an hour and 15 minutes, that's 5 slots...
+	var slotSize = 5; // how many minutes does a single slot on the grid equate to?
+	var selectionSize = 12;
 
 	function extractTimeFromDateDescriptor(dateDescriptor, bump) {
 		var t = Date.parse(dateDescriptor);
@@ -98,24 +98,66 @@
 		}
 	}
 
+	function getBlockFirstElement(b) {
+		return b.first();
+	}
+
 	function getBlockMidElement(b) {
 		var mid = Math.floor(b.length / 2);
 		if (b.length % 2 == 0) { mid--; }
 		return b.eq(mid);
 	}
 
+	function findDateArrayOfDow(dow) {
+		// dow is something like "Sun", "Mon", "Tue", etc.
+		// returns an array of [year,month,day] that corresponds to that day of the week
+		var slotInfo = $("[data-dow='" + dow + "']").attr("data-slotInfo");
+
+		return slotInfo == null ? null : slotInfo.substring(0,10).split("-");
+
+		// return $("[data-dow='" + dow + "']").attr("data-slotInfo").substring(0,10).split("-");
+	}
+
+	function markClosedTimes() {
+		// when is room open?
+		// during year
+		//		7:00 am to 10:00 pm monday through thursday
+		//		10:00 am to 4:00 pm friday and saturday
+		//		10:00 am to 10:00 pm sunday
+		// during summer and break
+		//		8:00 am to 5:00 pm monday through friday.
+		
+		var sunday = findDateArrayOfDow("Sun");
+		var friday = findDateArrayOfDow("Fri");
+		var saturday = findDateArrayOfDow("Sat");
+
+		console.log("sunday [" + sunday + "], friday [" + friday + "], saturday [" + saturday + "]");
+				
+		// on Fridays/Saturdays/Sundays, closed 7am-10am
+		$.each([friday, saturday, sunday], function(idx, dayOfWeek) {
+			if (dayOfWeek != null) {
+				blockOffTime(new Date(dayOfWeek[0], dayOfWeek[1]-1, dayOfWeek[2], 7, 0),
+							new Date(dayOfWeek[0], dayOfWeek[1]-1, dayOfWeek[2], 10, 0),
+							"closed", "closed");
+			}
+		});
+
+		$.each([friday, saturday], function(idx, dayOfWeek) {
+			if (dayOfWeek != null) { 
+				blockOffTime(new Date(dayOfWeek[0], dayOfWeek[1]-1, dayOfWeek[2], 16, 0),
+							null,
+							"closed", "closed");
+			}
+		});
+	}
+
+	function markAppointmentTimes() {
+		blockOffTime(new Date(2014, 8, 2, 14, 5), new Date(2014, 8, 2, 14, 17), "booked", "2:05-2:17");
+	}
+
 	function performGridSetup() {
-		// let's add some closed times
-		//       7:00 am to 10:00 pm monday through thursday
-		//             10:00 am to 4:00 pm friday and saturday
-		//                   10:00 am to 10:00 pm sunday
-		//                      during summer and break
-		//                            8:00 am to 5:00 pm monday through friday.
-
-		blockOffTime(new Date(2014, 8, 6, 7, 0), new Date(2014, 8, 6, 10, 0), "closed", "closed");
-		blockOffTime(new Date(2014, 8, 6, 16, 0), null, "closed", "closed");
-
-		blockOffTime(new Date(2014, 8, 7, 14, 5), new Date(2014, 8, 7, 14, 17), "booked", "2:05-2:17");
+		markClosedTimes();
+		markAppointmentTimes();
 
 		$(".gridSlotRight").click(function (evt) {
 			var completeBlock = getElPlusSibs(this, selectionSize);
@@ -163,24 +205,4 @@
 				$("#debugStatus").html("&nbsp;");
 			}
 		});
-
-		/*
-		// what if we want to allow selections that don't correspond to the grid granularity we've rendered with?
-		$(".gridSlotRight").hover(function (evt) {
-			var startBlock = $(this);
-			// var vertPosInBlock = 
-			var blockOffset = startBlock.offset();
-
-			var hl = $("#highlighter");
-
-			var hlHeight = startBlock.height() * 1.5; // an hour and a half, say
-
-			if (evt.type == "mouseenter") {
-				// console.log("blockOFfset is [" + blockOffset.left + "],[" + blockOffset.top + "]");
-				// console.log("mouse is [" + evt.offsetX + "],[" + evt.offsetY + "]");
-				// console.log("block is [" + startBlock.width() + "] x [" + startBlock.height() + "]");
-				hl.css({display: "block", width: startBlock.width(), height: hlHeight, left: blockOffset.left + 3, top: blockOffset.top + evt.offsetY});
-			}
-		});
-		*/
 	}
