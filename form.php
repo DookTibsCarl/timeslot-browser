@@ -8,15 +8,33 @@
 	<script src="grid.js"></script>
 
 	<script>
-		function reloadEmsForm(x) {
+		function pageEmsForm(screensAhead) {
+			reloadEmsForm(screensAhead);
+		}
+
+		function reloadEmsForm(x, initial) {
 			console.log("reload form [" + x + "]");
 
 			var ems = $("#ems");
 			ems.html("reloading...");
-			ems.load("grid.php", {mode:"popup", popupPagerCallback:"reloadEmsForm", screensAhead:x}, function() {
+			ems.load("grid.php", {mode:"popup", popupPagerCallback:"pageEmsForm", screensAhead:x}, function() {
 				console.log("finished loading next week!");
-				performGridSetup();
+				performGridSetup({
+									closedTimes: [
+										"Sun|7|0|10|0|closed",
+										"Fri|7|0|10|0|closed",
+										"Sat|7|0|10|0|closed",
+
+										"Fri|16|0|-1|-1|closed",
+										"Sat|16|0|-1|-1|closed"
+									]
+								});
 			});
+
+			if (initial) {
+				console.log("first time open");
+				  ems.dialog( "open" );
+			}
 		}
 
 		$(function() {
@@ -30,13 +48,7 @@
 			});
 
 			$( "#launch-ems" ).button().on( "click", function() {
-				var ems = $("#ems");
-				ems.html("loading...");
-				ems.load("grid.php", {popupPagerCallback:"reloadEmsForm", mode:"popup"}, function() {
-					console.log("finished loading!");
-					performGridSetup();
-				});
-			  emsDialog.dialog( "open" );
+				reloadEmsForm(0, true);
 			});
 		});
 	</script>

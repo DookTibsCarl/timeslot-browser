@@ -95,9 +95,8 @@ class CalendarSlotPickerWidget {
 			$weekNav .= "<a href='" . $this->buildPager(Array("screensAhead" => $this->screenOffset+1)) . "'>Next</a>";
 		}
 
-$blah = $_REQUEST["popupPagerCallback"];
 		$html = <<<HTML
-<div><span id="debugStatus">status goes here ($this->mode) ($blah)</span></div>
+<div><span id="debugStatus">status goes here ($this->mode)</span></div>
 <div>$weekNav</div>
 <div id="calHolder">
 	<div class="times">

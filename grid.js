@@ -29,13 +29,13 @@
 	function getNumSlots(startDate, endDate) {
 		if (endDate == null) { return -1; }
 
-		console.log("calc num slots for [" + startDate + "]->[" + endDate + "]...");
+		// console.log("calc num slots for [" + startDate + "]->[" + endDate + "]...");
 
 		var startSecs = startDate.getTime() / 1000;
 		var endSecs = endDate.getTime() / 1000;
 		var diffMinutes = (endSecs - startSecs) / 60;
 		var slots = diffMinutes / calGridCfg.slotSize;
-		console.log(diffMinutes + " separates these; corresponds to [" + slots + "]");
+		// console.log(diffMinutes + " separates these; corresponds to [" + slots + "]");
 		return slots;
 	}
 
@@ -119,7 +119,13 @@
 		// return $("[data-dow='" + dow + "']").attr("data-slotInfo").substring(0,10).split("-");
 	}
 
-	function markClosedTimes() {
+	// events is an array of ???; each entry takes the form of either:
+	// 1. "<dow>|<hour>|<min>|<hour>|<min>|closed for some reason"
+	//    ex: "Sun|7|0|10|0..." means Sunday 7am to 10am
+	// 2. "<year>|<month>|<day>|<hour>|<min>|<hour>|<min>|booked by somebody"
+	//	  ex: "2014|9|2|14|5|14|17..." mens "Sept 2, 2014, from 2:05 - 2:17
+	function markSpecialTimes(events, classForAffectedRows) {
+		if (events == null) { return; }
 		// when is room open?
 		// during year
 		//		7:00 am to 10:00 pm monday through thursday
@@ -127,33 +133,22 @@
 		//		10:00 am to 10:00 pm sunday
 		// during summer and break
 		//		8:00 am to 5:00 pm monday through friday.
-		
-		var sunday = findDateArrayOfDow("Sun");
-		var friday = findDateArrayOfDow("Fri");
-		var saturday = findDateArrayOfDow("Sat");
 
-		console.log("sunday [" + sunday + "], friday [" + friday + "], saturday [" + saturday + "]");
-				
-		// on Fridays/Saturdays/Sundays, closed 7am-10am
-		$.each([friday, saturday, sunday], function(idx, dayOfWeek) {
-			if (dayOfWeek != null) {
-				blockOffTime(new Date(dayOfWeek[0], dayOfWeek[1]-1, dayOfWeek[2], 7, 0),
-							new Date(dayOfWeek[0], dayOfWeek[1]-1, dayOfWeek[2], 10, 0),
-							"closed", "closed");
+		for (var i = 0 ; i < events.length ; i++) {
+			var currEvt = events[i];
+			// console.log("attempt to mark off [" + currEvt + "]");
+			var chunks = currEvt.split("|");
+			if (isNaN(chunks[0])) {
+				var actualDay = findDateArrayOfDow(chunks[0]);
+				blockOffTime(new Date(actualDay[0], actualDay[1]-1, actualDay[2], chunks[1], chunks[2]),
+							chunks[3] == -1 ? null : new Date(actualDay[0], actualDay[1]-1, actualDay[2], chunks[3], chunks[4]),
+							classForAffectedRows, chunks[5]);
+			} else {
+				blockOffTime(new Date(chunks[0], chunks[1]-1, chunks[2], chunks[3], chunks[4]),
+							new Date(chunks[0], chunks[1]-1, chunks[2], chunks[5], chunks[6]),
+							classForAffectedRows, chunks[7]);
 			}
-		});
-
-		$.each([friday, saturday], function(idx, dayOfWeek) {
-			if (dayOfWeek != null) { 
-				blockOffTime(new Date(dayOfWeek[0], dayOfWeek[1]-1, dayOfWeek[2], 16, 0),
-							null,
-							"closed", "closed");
-			}
-		});
-	}
-
-	function markAppointmentTimes() {
-		blockOffTime(new Date(2014, 8, 2, 14, 5), new Date(2014, 8, 2, 14, 17), "booked", "2:05-2:17");
+		}
 	}
 
 	function setConfigDefault(param, val) {
@@ -167,8 +162,8 @@
 		setConfigDefault("slotSize", 5);
 		setConfigDefault("selectionSize", 12);
 
-		markClosedTimes();
-		markAppointmentTimes();
+		markSpecialTimes(calGridCfg.closedTimes, "closed");
+		markSpecialTimes(calGridCfg.bookedEvents, "booked");
 
 		$(".gridSlotRight").click(function (evt) {
 			var completeBlock = getElPlusSibs(this, calGridCfg.selectionSize);
@@ -180,8 +175,11 @@
 
 				var firstSlotInfo = $(this).attr("data-slotInfo");
 				var lastSlotInfo = calGridCfg.selectionSize == 1 ? firstSlotInfo : $(this).nextAll().slice(0,calGridCfg.selectionSize-1).last().attr("data-slotInfo");
+				var tmpTime = Date.parse(lastSlotInfo);
+				tmpTime += calGridCfg.slotSize * 60 * 1000;
+				var adjustedDate = new Date(tmpTime);
 
-				$("#demofield").val("END NEEDS FIXING:" + firstSlotInfo + " - " + lastSlotInfo);
+				$("#demofield").val(firstSlotInfo + " - " + convertDateForSlotInfo(adjustedDate));
 				$("#ems").dialog("close");
 			} else {
 				$("#debugStatus").html("FAIL [" + outcomeBlob.error + "]");
