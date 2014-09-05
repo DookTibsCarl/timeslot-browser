@@ -120,6 +120,11 @@ STYLE;
 		$endOfDay = strtotime("21:59:59");
 		$oneDay = 24 * 60 * 60;
 
+		// back up to Sunday
+		$daysAheadOfSunday = date("w", $startOfDay);
+		$startOfDay -= $oneDay * $daysAheadOfSunday;
+		$endOfDay -= $oneDay * $daysAheadOfSunday;
+
 		$startOfDay += $oneDay * $weekAdvance*7;
 		$endOfDay += $oneDay * $weekAdvance*7;
 
@@ -127,13 +132,13 @@ STYLE;
 
 		$daysHtml = "";
 		for ($i = 0 ; $i < $days ; $i++) {
-			$startOfDay += $oneDay;
-			$endOfDay += $oneDay;
-
 			$daysHtml .= "<div class='dayCol' style='width:" . (100/$days) . "%'>";
 			$daysHtml .= $this->buildSingleDayGrid($startOfDay, $endOfDay, $slotSize, "default", false);
 			// $daysHtml .= $i;
 			$daysHtml .= "</div>";
+
+			$startOfDay += $oneDay;
+			$endOfDay += $oneDay;
 		}
 
 		$weekNav = "";
@@ -166,7 +171,7 @@ HTML;
 	}
 }
 
-$weekOffset = isset($_REQUEST["weeksAhead"]) ? $_REQUEST["weeksAhead"] : 0;
+$weekOffset = isset($_REQUEST["weeksAhead"]) ? max($_REQUEST["weeksAhead"], 0) : 0;
 
 $tc = new TibsCal();
 $tc->drawCal($weekOffset, 7, 15);
