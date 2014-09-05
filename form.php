@@ -7,11 +7,23 @@
 	<script src="grid.js"></script>
 
 	<script>
+		function reloadEmsForm(x) {
+			console.log("reload form [" + x + "]");
+
+			var ems = $("#ems");
+			ems.html("reloading...");
+			ems.load("grid.php", {mode:"popup", weeksAhead:x}, function() {
+				console.log("finished loading next week!");
+				performGridSetup();
+			});
+		}
+
 		$(function() {
 			console.log("executing...");
 			var emsDialog = $( "#ems" ).dialog({
+				title: "Choose something",
 			  autoOpen: false,
-			  height: 400,
+			  height: $(window).height() * .75,
 			  width: "80%",
 			  modal: true
 			});

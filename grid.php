@@ -105,7 +105,8 @@ STYLE;
 		return $html;
 	}
 
-	function drawCal($days, $slotSize) {
+	function drawCal($weekAdvance, $days, $slotSize) {
+		$this->weekOffset = $weekAdvance;
 		$this->setupStyle();
 		// echo "drawing calendar with [$slotSize] minute slots, looking out [$days] days:<P>";
 		
@@ -118,6 +119,9 @@ STYLE;
 		$startOfDay = strtotime("07:00:00");
 		$endOfDay = strtotime("21:59:59");
 		$oneDay = 24 * 60 * 60;
+
+		$startOfDay += $oneDay * $weekAdvance*7;
+		$endOfDay += $oneDay * $weekAdvance*7;
 
 		$timesHtml = $this->buildSingleDayGrid($startOfDay, $endOfDay, $slotSize, "&nbsp;", true);
 
@@ -132,8 +136,21 @@ STYLE;
 			$daysHtml .= "</div>";
 		}
 
+		$weekNav = "";
+
+		if ($this->mode == "popup") {
+			if ($this->weekOffset > 0) { $weekNav .= "<a href='#' onClick='reloadEmsForm(" . ($this->weekOffset-1) . ");'>Previous Week</a>"; } else { $weekNav .= "Previous Week"; }
+			$weekNav .= " | ";
+			$weekNav .= "<a href='#' onClick='reloadEmsForm(" . ($this->weekOffset+1) . ");'>Next Week</a>";
+		} else {
+			if ($this->weekOffset > 0) { $weekNav .= "<a href='?weeksAhead=" . ($this->weekOffset-1) . "'>Previous Week</a>"; } else { $weekNav .= "Previous Week"; }
+			$weekNav .= " | ";
+			$weekNav .= "<a href='?weeksAhead=" . ($this->weekOffset+1) . "'>Next Week</a>";
+		}
+
 		$html = <<<HTML
 <!-- <div><span id="debugStatus">status goes here ($this->mode)</span></div> -->
+<div>$weekNav</div>
 <div id="calHolder">
 	<div class="times">
 		$timesHtml
@@ -149,6 +166,8 @@ HTML;
 	}
 }
 
+$weekOffset = isset($_REQUEST["weeksAhead"]) ? $_REQUEST["weeksAhead"] : 0;
+
 $tc = new TibsCal();
-$tc->drawCal(7, 15);
+$tc->drawCal($weekOffset, 7, 15);
 ?>
