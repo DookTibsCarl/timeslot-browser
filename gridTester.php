@@ -14,6 +14,7 @@ include_once('sql_db.php');
 	<script>
 		$(function() {
 			performGridSetup({
+									selectionSize: -1,
 									closeOnAndBefore: "2014-09-08",
 									closedTimes: [
 										"Sun|7|0|10|0|closed",

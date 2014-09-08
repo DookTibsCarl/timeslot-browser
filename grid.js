@@ -68,6 +68,13 @@
 		return d.getFullYear() + "-" + zeroPad(d.getMonth() + 1) + "-" + zeroPad(d.getDate()) + "," + zeroPad(d.getHours()) + ":" + zeroPad(d.getMinutes());
 	}
 
+	function extractDateFromSlotInfo(si) {
+		var dateAndTime = si.split(",");
+		var dateChunks = (dateAndTime[0]).split("-");
+		var timeChunks = (dateAndTime[1]).split(":");
+		return new Date(dateChunks[0], dateChunks[1]-1, dateChunks[2], timeChunks[0], timeChunks[1]);
+	}
+
 	function blockOffTime(startDate, endDate, className, visibleCopy) {
 		// getElPlusSibs("[data-slotInfo='2014-Sep-06,07:00']", 12).removeClass("available").addClass("closed").first().html("closed");
 		var adjustedStart = adjustDateForSlotSize(startDate, -1);
@@ -84,9 +91,9 @@
 		}
 	}
 
-	function isBlockFree(block) {
+	function isBlockFree(block, expectedLength) {
 		var whyFailed = "";
-		if (block.length != calGridCfg.selectionSize) {
+		if (block.length != expectedLength) {
 			whyFailed = "too close to end of 10pm hard limit";
 		} else {
 			var isWholeBlockAvail = true;
@@ -210,41 +217,78 @@
 		markSpecialTimes(calGridCfg.closedTimes, "closed");
 		markSpecialTimes(calGridCfg.bookedEvents, "booked");
 
-		$(".gridSlotRight").click(function (evt) {
-			var completeBlock = getElPlusSibs(this, calGridCfg.selectionSize);
-			var outcomeBlob = isBlockFree(completeBlock);
+		if (calGridCfg.selectionSize != -1) { // we have preconfigured how long a time we need
+			$(".gridSlotRight").click(function (evt) {
+				var completeBlock = getElPlusSibs(this, calGridCfg.selectionSize);
+				var outcomeBlob = isBlockFree(completeBlock, calGridCfg.selectionSize);
 
-			if (outcomeBlob.status) {
-				$("#debugStatus").html("ok to select!");
-				console.log("writeback please!");
+				if (outcomeBlob.status) {
+					$("#debugStatus").html("ok to select!");
+					console.log("writeback please!");
 
-				var firstSlotInfo = $(this).attr("data-slotInfo");
-				var lastSlotInfo = calGridCfg.selectionSize == 1 ? firstSlotInfo : $(this).nextAll().slice(0,calGridCfg.selectionSize-1).last().attr("data-slotInfo");
-				var tmpTime = Date.parse(lastSlotInfo);
-				tmpTime += calGridCfg.slotSize * 60 * 1000;
-				var adjustedDate = new Date(tmpTime);
+					var firstSlotInfo = $(this).attr("data-slotInfo");
+					var lastSlotInfo = calGridCfg.selectionSize == 1 ? firstSlotInfo : $(this).nextAll().slice(0,calGridCfg.selectionSize-1).last().attr("data-slotInfo");
+					var tmpTime = Date.parse(lastSlotInfo);
+					tmpTime += calGridCfg.slotSize * 60 * 1000;
+					var adjustedDate = new Date(tmpTime);
 
-				var callbackFxn = calGridCfg.popupSelectionCallback;
-				if (callbackFxn) {
-					// $("#demofield").val(firstSlotInfo + " - " + convertDateForSlotInfo(adjustedDate));
-					callbackFxn(firstSlotInfo, convertDateForSlotInfo(adjustedDate));	
+					var callbackFxn = calGridCfg.popupSelectionCallback;
+					if (callbackFxn) {
+						// $("#demofield").val(firstSlotInfo + " - " + convertDateForSlotInfo(adjustedDate));
+						callbackFxn(firstSlotInfo, convertDateForSlotInfo(adjustedDate));	
+					} else {
+						console.log("No callback function ; must supply 'popupSelectionCallback' in 'performGridSetup'...");
+					}
+					$("#ems").dialog("close");
 				} else {
-					console.log("No callback function ; must supply 'popupSelectionCallback' in 'performGridSetup'...");
+					$("#debugStatus").html("FAIL [" + outcomeBlob.error + "]");
 				}
-				$("#ems").dialog("close");
-			} else {
-				$("#debugStatus").html("FAIL [" + outcomeBlob.error + "]");
-			}
-		});
+			});
+		} else {
+			// we want to let the user drag within a day to book a specific time
+			$(".gridSlotRight").mousedown(function (evt) {
+				var completeBlock = getElPlusSibs(this, 1);
+				var outcomeBlob = isBlockFree(completeBlock, 1);
+
+				if (outcomeBlob.status) {
+					console.log("start drag");
+
+					$(".hovering").removeClass("hovering").html("");
+					isDraggingFrom = $(this);
+					handleDrag();
+					$("*").mouseup(function (evt) {
+						console.log("stop dragging");
+						isDraggingFrom = null;
+					});
+				}
+			});
+		}
+
 
 		$(".gridSlotRight").hover(function (evt) {
-			var completeBlock = getElPlusSibs(this, calGridCfg.selectionSize);
+			if (isDraggingFrom != null) {
+				var dragData = handleDrag($(this));
+				hilite(dragData.startBlock, dragData.amount, evt.type=="mouseenter");
+			} else {
+				if (calGridCfg.selectionSize == -1) {
+					setStatus("FOO: " + $(this).attr("data-slotInfo"));
+					return;
+				}
+
+				var numBlocksPreview = calGridCfg.selectionSize == -1 ? 1 : calGridCfg.selectionSize;
+				hilite(this, numBlocksPreview, evt.type=="mouseenter");
+			}
+
+			/*
+			var numBlocksPreview = calGridCfg.selectionSize == -1 ? 1 : calGridCfg.selectionSize;
+			console.log("hovering [" + calGridCfg.selectionSize + "]/[" + numBlocksPreview + "]");
+			var completeBlock = getElPlusSibs(this, numBlocksPreview);
 
 			var firstSlotInfo = $(this).attr("data-slotInfo");
-			var lastSlotInfo = calGridCfg.selectionSize == 1 ? firstSlotInfo : $(this).nextAll().slice(0,calGridCfg.selectionSize-1).last().attr("data-slotInfo");
+			var lastSlotInfo = numBlocksPreview == 1 ? firstSlotInfo : $(this).nextAll().slice(0,calGridCfg.selectionSize-1).last().attr("data-slotInfo");
 
 			if (evt.type == "mouseenter") {
-				var outcomeBlob = isBlockFree(completeBlock);
+				var outcomeBlob = isBlockFree(completeBlock, numBlocksPreview);
 				var outcome = outcomeBlob.error;
 
 				if (outcome == "") {
@@ -264,5 +308,64 @@
 				}
 				$("#debugStatus").html("&nbsp;");
 			}
+			*/
 		});
+	}
+
+	function hilite(originBlock, amount, onOrOff) {
+		var completeBlock = getElPlusSibs(originBlock, amount);
+
+		var firstSlotInfo = $(originBlock).attr("data-slotInfo");
+		var lastSlotInfo = amount == 1 ? firstSlotInfo : $(originBlock).nextAll().slice(0,amount-1).last().attr("data-slotInfo");
+
+		console.log("showing highlight from [" + firstSlotInfo + "] -> [" + lastSlotInfo + "]");
+
+		if (onOrOff) {
+			var outcomeBlob = isBlockFree(completeBlock, amount);
+			var outcome = outcomeBlob.error;
+
+			if (outcome == "") {
+				outcome = "ok!";
+				completeBlock.css("cursor", "");
+				completeBlock.addClass("hovering");
+				getBlockMidElement(completeBlock).html(extractTimeFromDateDescriptor(firstSlotInfo) + "->" + extractTimeFromDateDescriptor(lastSlotInfo, true));
+			} else {
+				completeBlock.css("cursor", "not-allowed");
+			}
+
+			$("#debugStatus").html("hovering over [" + firstSlotInfo + "] - " + outcome);
+		} else {
+			if (completeBlock.first().hasClass("hovering")) {
+				getBlockMidElement(completeBlock).html("");
+				completeBlock.removeClass("hovering");
+			}
+			$("#debugStatus").html("&nbsp;");
+		}
+	}
+
+	var isDraggingFrom = null;
+	function handleDrag(dragTo) {
+		if (dragTo == null) { dragTo = isDraggingFrom; }
+
+		var a = extractDateFromSlotInfo(isDraggingFrom.attr("data-slotInfo"));
+		var b = extractDateFromSlotInfo(dragTo.attr("data-slotInfo"));
+
+		// force on a single day
+		b.setFullYear(a.getFullYear());
+		b.setMonth(a.getMonth());
+		b.setDate(a.getDate());
+
+		var early = a.getTime() > b.getTime() ? b : a;
+		var late = a.getTime() > b.getTime() ? a : b;
+
+		var earlyBlock = a.getTime() > b.getTime() ? dragTo : isDraggingFrom;
+
+		var diff = (late.getTime() - early.getTime()) / 1000 / 60;
+		setStatus("BAR: " + early + " -> " + late + " (" + diff + " mins)");
+		return { startBlock: earlyBlock, amount: diff / calGridCfg.slotSize };
+	}
+
+	function setStatus(s) {
+		var statusLine = $("#statusLine");
+		statusLine.html(s);
 	}

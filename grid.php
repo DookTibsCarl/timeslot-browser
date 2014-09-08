@@ -97,7 +97,12 @@ class CalendarSlotPickerWidget {
 
 		$html = <<<HTML
 <div><span id="debugStatus">status goes here ($this->mode)</span></div>
-<div>$weekNav</div>
+<div id="gridUi">
+	<span style="margin-left: 5px">$weekNav</span>
+	<span style="float:right; margin-right: 20px">
+		<span id="statusLine"></span>
+		<span id="okHolder"><input type="button" id="confirmButton" value="ok"/></span>
+</div>
 <div id="calHolder">
 	<div class="times">
 		$timesHtml
