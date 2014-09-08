@@ -1,3 +1,5 @@
+// this isn't super robust. DOesn't handle overlapping appointments correctly for instance.
+
 	// var slotSize = 5; // how many minutes does a single slot on the grid equate to?
 	// var selectionSize = 12;
 	var calGridCfg = {};
@@ -70,8 +72,16 @@
 		// getElPlusSibs("[data-slotInfo='2014-Sep-06,07:00']", 12).removeClass("available").addClass("closed").first().html("closed");
 		var adjustedStart = adjustDateForSlotSize(startDate, -1);
 		var adjustedEnd = adjustDateForSlotSize(endDate, 1);
+		// console.log(startDate + " --> " + adjustedStart);
+		// console.log(endDate + " --> " + adjustedEnd);
 		var numSlots = getNumSlots(adjustedStart, adjustedEnd);
-		getElPlusSibs("[data-slotInfo='" + convertDateForSlotInfo(adjustedStart) + "']", numSlots).removeClass("available").addClass(className).first().html(visibleCopy);
+		// getElPlusSibs("[data-slotInfo='" + convertDateForSlotInfo(adjustedStart) + "']", numSlots).removeClass("available").addClass(className).first().html(visibleCopy);
+		var slots = getElPlusSibs("[data-slotInfo='" + convertDateForSlotInfo(adjustedStart) + "']", numSlots);
+		if (slots.first().hasClass("available")) {
+			slots.removeClass("available").addClass(className).first().html(visibleCopy);
+		} else {
+			// this time slot was already marked with something else...
+		}
 	}
 
 	function isBlockFree(block) {
@@ -145,7 +155,7 @@
 							classForAffectedRows, chunks[5]);
 			} else {
 				blockOffTime(new Date(chunks[0], chunks[1]-1, chunks[2], chunks[3], chunks[4]),
-							new Date(chunks[0], chunks[1]-1, chunks[2], chunks[5], chunks[6]),
+							chunks[5] == -1 ? null : new Date(chunks[0], chunks[1]-1, chunks[2], chunks[5], chunks[6]),
 							classForAffectedRows, chunks[7]);
 			}
 		}
@@ -162,6 +172,41 @@
 		setConfigDefault("slotSize", 5);
 		setConfigDefault("selectionSize", 12);
 
+		// if closeOnAndBefore was supplied, mark that off completely.
+		// used for instance in preventing people from picking times in the past, times today and in the past, etc.
+		if (configObj.closeOnAndBefore) {
+			var oneDay = 24*60*60*1000;
+			var closeSentinel = new Date(Date.parse(configObj.closeOnAndBefore) + oneDay);
+
+			var pastTimes = [];
+
+			var loopSlotData = $(".gridSlotRight").first().attr("data-slotInfo"); // very first slot
+
+			while (true) {
+				var dateChunks = ((loopSlotData.split(","))[0]).split("-");
+				var timeChunks = ((loopSlotData.split(","))[1]).split(":");
+				var loopDate = new Date(dateChunks[0], dateChunks[1]-1, dateChunks[2], 0, 0, 0);
+
+				if (loopDate.getTime() < closeSentinel.getTime()) {
+					console.log("this is on or before [" + configObj.closeOnAndBefore + "]");
+					pastTimes.push(dateChunks[0] + "|" + dateChunks[1] + "|" + dateChunks[2] + "|" + timeChunks[0] + "|" + timeChunks[1] + "|-1|-1|past")
+
+					var nextSlotDate = new Date(loopDate.getTime() + oneDay);
+					nextSlotDate.setHours(timeChunks[0]);
+					nextSlotDate.setMinutes(timeChunks[1]);
+					var nextSlot = $("[data-slotInfo^='" + convertDateForSlotInfo(nextSlotDate) + "']");
+					if (nextSlot.length == 1) {
+						loopSlotData = convertDateForSlotInfo(nextSlotDate);
+					} else {
+						break;
+					}
+				} else {
+					break;
+				}
+			}
+
+			markSpecialTimes(pastTimes, "inThePast");
+		}
 		markSpecialTimes(calGridCfg.closedTimes, "closed");
 		markSpecialTimes(calGridCfg.bookedEvents, "booked");
 
@@ -179,7 +224,13 @@
 				tmpTime += calGridCfg.slotSize * 60 * 1000;
 				var adjustedDate = new Date(tmpTime);
 
-				$("#demofield").val(firstSlotInfo + " - " + convertDateForSlotInfo(adjustedDate));
+				var callbackFxn = calGridCfg.popupSelectionCallback;
+				if (callbackFxn) {
+					// $("#demofield").val(firstSlotInfo + " - " + convertDateForSlotInfo(adjustedDate));
+					callbackFxn(firstSlotInfo, convertDateForSlotInfo(adjustedDate));	
+				} else {
+					console.log("No callback function ; must supply 'popupSelectionCallback' in 'performGridSetup'...");
+				}
 				$("#ems").dialog("close");
 			} else {
 				$("#debugStatus").html("FAIL [" + outcomeBlob.error + "]");

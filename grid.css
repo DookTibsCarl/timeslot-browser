@@ -71,3 +71,7 @@
 .debugStatus {
 	display: none;
 }
+
+.inThePast {
+	background-color: blue;
+}

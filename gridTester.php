@@ -14,6 +14,7 @@ include_once('sql_db.php');
 	<script>
 		$(function() {
 			performGridSetup({
+									closeOnAndBefore: "2014-09-08",
 									closedTimes: [
 										"Sun|7|0|10|0|closed",
 										"Fri|7|0|10|0|closed",
@@ -23,7 +24,7 @@ include_once('sql_db.php');
 										"Sat|16|0|-1|-1|closed"
 									],
 									bookedEvents: [
-										"2014|9|2|14|5|14|17|study group"
+										"2014|9|4|14|5|14|17|study group"
 									]
 								});
 		});
