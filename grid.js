@@ -1,5 +1,5 @@
 // 1. fix vertical positioning of preview/confirm window (FIXED)
-// 2. make reverse selections function better (should be able to select back from 10pm for instance
+// 2. make reverse selections function better (should be able to select back from 10pm for instance (FIXED)
 // 3. make forward selections that hit end of day work
 //
 // this isn't super robust. DOesn't handle overlapping appointments correctly for instance, appointments that span a day, etc.
@@ -192,10 +192,6 @@
 	}
 
 	function initGrid(configObj) {
-		$("#confirmWindow").hover(function(evt) {
-			hidePreviewWidget();
-		});
-
 		if (!configObj.targetSelector) {
 			console.log("error - no target selector defined");
 			return;
@@ -211,6 +207,8 @@
 		setConfigDefault("hardCapEnd", "21:59:59");
 
 		buildOutDom(configObj.targetSelector)
+		$("#confirmWindow").hover(function(evt) { hidePreviewWidget(); });
+
 
 		// if closeOnAndBefore was supplied, mark that off completely.
 		// used for instance in preventing people from picking times in the past, times today and in the past, etc.
@@ -272,7 +270,11 @@
 							
 							var finalBlock = $(".hovering");
 							finalizedStart = finalBlock.first().attr("data-slotInfo");
-							finalizedEnd = finalBlock.last().next().attr("data-slotInfo");
+							finalizedEnd = finalBlock.last().attr("data-slotInfo");
+
+							var bumpDate = extractDateFromSlotInfo(finalizedEnd)
+							bumpDate = new Date(bumpDate.getTime() + (calGridCfg.slotSize * 60 * 1000));
+							finalizedEnd = convertDateForSlotInfo(bumpDate);
 
 
 							enableConfirmButtons(true);
@@ -363,7 +365,10 @@
 		b.setMonth(a.getMonth());
 		b.setDate(a.getDate());
 
-		console.log("handle drag FROM [" + a + "] TO [" + b + "]");
+		if (b.getTime() < a.getTime()) {
+			// reverse drag - need to bump the isDraggingFrom one unit so that you can reverse drag from an appointment boundary for instance...
+			a = new Date(a.getTime() + (calGridCfg.slotSize * 60 * 1000));
+		}
 
 		var early = a.getTime() > b.getTime() ? b : a;
 		var late = a.getTime() > b.getTime() ? a : b;
