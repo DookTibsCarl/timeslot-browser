@@ -6,14 +6,6 @@
 // sort of a mess. javascript makes lots of decisions based on state of the visual grid and not on underlying data
 // just something fun I banged out "quickly"
 
-/*
-	var mouse = {x: 0, y: 0};
-
-	document.addEventListener('mousemove', function(e){ 
-	    mouse.x = e.clientX || e.pageX; 
-		mouse.y = e.clientY || e.pageY 
-	}, false);
-*/
 	var finalizedStart;
 	var finalizedEnd;
 
@@ -191,15 +183,26 @@
 		}
 	}
 
-	function performGridSetup(configObj) {
-		// $("#confirmButton").attr("disabled", "disabled");
+	function initGrid(configObj) {
 		$("#confirmWindow").hover(function(evt) {
 			hidePreviewWidget();
 		});
 
+		if (!configObj.targetSelector) {
+			console.log("error - no target selector defined");
+			return;
+		}
+
 		calGridCfg = configObj ? configObj : {};	
 		setConfigDefault("slotSize", 5);
-		setConfigDefault("selectionSize", 12);
+		setConfigDefault("selectionSize", -1);
+		setConfigDefault("screensAhead", 0);
+		setConfigDefault("daysToShow", 7);
+		setConfigDefault("alternatorSize", 12);
+		setConfigDefault("hardCapStart", "07:00:00");
+		setConfigDefault("hardCapEnd", "21:59:59");
+
+		buildOutDom(configObj.targetSelector)
 
 		// if closeOnAndBefore was supplied, mark that off completely.
 		// used for instance in preventing people from picking times in the past, times today and in the past, etc.
@@ -417,12 +420,13 @@
 	function previewOk() {
 		console.log("clicked ok");
 
-		var callbackFxn = calGridCfg.popupSelectionCallback;
+		var callbackFxn = calGridCfg.selectionCallback;
 		if (callbackFxn) {
 			callbackFxn(finalizedStart, finalizedEnd);
 		} else {
-			console.log("No callback function ; must supply 'popupSelectionCallback' in 'performGridSetup'...");
+			console.log("No callback function ; must supply 'selectionCallback' in 'performGridSetup'...");
 		}
+		previewCancel();
 	}
 
 	function previewCancel() {
@@ -444,6 +448,17 @@
 		}
 	}
 
+	var prettyDowNames = [ "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" ];
+	var prettyMonthNames = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ];
+
+	function dowDateFormat(d) {
+		return prettyDowNames[d.getDay()];
+	}
+
+	function headerDateFormat(d) {
+		return prettyDowNames[d.getDay()] + ", " + prettyMonthNames[d.getMonth()] + " " + d.getDate();
+	}
+
 	function previewDateFormat(d) {
 		if (d.getHours() > 12) {
 			return (d.getHours() - 12) + ":" + zeroPad(d.getMinutes()) + " PM";
@@ -456,3 +471,123 @@
 		var statusLine = $("#statusLine");
 		statusLine.html(s);
 	}
+
+	/****** DOM BUILD - START *******/
+	function buildOutDom(baseElementSelector) {
+		var baseElement = $(baseElementSelector);
+		baseElement.empty();
+		// stub everything out
+		var gridUiEl = $("<div/>").attr("id", "gridUi").appendTo(baseElement);
+		$("<span/>").css("margin-left", 5).attr("id", "navUi").html("PAGE NAV HERE").appendTo(gridUiEl);
+
+		var calHolderEl = $("<div/>").attr("id", "calHolder").appendTo(baseElement);
+		$("<div/>").attr("id", "timesHolder").addClass("times").appendTo(calHolderEl);
+		var gridEl = $("<div/>").attr("id", "dayGrid").addClass("dayGrid").appendTo(calHolderEl);
+
+		var previewWindowEl = $("<div/>").attr("id", "previewWindow").addClass("simpleFloater").appendTo(baseElement);
+		var confirmWindowEl = $("<div/>").attr("id", "confirmWindow").addClass("simpleFloater").appendTo(baseElement);
+
+		$("<div/>").attr("id", "confirmStatus").appendTo(confirmWindowEl);
+		var buttonHolder = $("<div/>").appendTo(confirmWindowEl);
+		$("<input/>").attr({type: "button", value: "cancel"}).click(previewCancel).appendTo(buttonHolder);
+		$("<input/>").attr({type: "button", value: "ok"}).click(previewOk).appendTo(buttonHolder);
+
+		$("<div/>").attr("id", "highlighter").appendTo(baseElement);
+
+		// set up the prev/next links
+		setupPrevNext(calGridCfg.screensAhead);
+
+		// stub out the grid
+		stubOutGrid(calGridCfg.screensAhead,
+					calGridCfg.daysToShow,
+					calGridCfg.slotSize,
+					calGridCfg.alternatorSize,
+					calGridCfg.hardCapStart,
+					calGridCfg.hardCapEnd);
+	}
+
+	function setupPrevNext(currScreensAhead) {
+		var holder = $("#navUi");
+		holder.empty();
+
+		var prev = $("<span/>").appendTo(holder);
+		if (currScreensAhead <= 0) {
+			prev.html("Previous");
+		} else {
+			var prevLink = $("<a/>").attr("href", "#").html("Previous").appendTo(prev);
+			prevLink.click(function() {
+				calGridCfg.screensAhead = calGridCfg.screensAhead - 1;
+				initGrid(calGridCfg);
+			});
+		}
+
+		$("<span/>").html(" | ").appendTo(holder);
+
+		var next = $("<span/>").appendTo(holder);
+		var nextLink = $("<a/>").attr("href", "#").html("Next").appendTo(next);
+		nextLink.click(function() {
+			calGridCfg.screensAhead = calGridCfg.screensAhead + 1;
+			initGrid(calGridCfg);
+		});
+	}
+
+	function parseHardCap(s) {
+		var chunks = s.split(":");
+		var d = new Date();
+		d.setHours(parseInt(chunks[0]));
+		d.setMinutes(parseInt(chunks[1]));
+		d.setSeconds(parseInt(chunks[2]));
+		return d;
+	}
+
+	function buildSingleDayCol(holder, start, end, slotSize, alternatorSize, header, showStamp) {
+		if (header == "default") {
+			header = headerDateFormat(start);
+		}
+
+		$("<div/>").addClass("gridSlot").css("height", 15).html(header).appendTo(holder);
+		var stamp = start;
+		var looper = 0;
+		while (stamp.getTime() <= end.getTime()) {
+			if (showStamp) {
+				var slot = $("<div/>").addClass("gridSlot").appendTo(holder);
+				slot.html(looper % alternatorSize == 0 ? previewDateFormat(stamp) : "&nbsp;");
+			} else {
+				$("<div/>").addClass("available")
+					.addClass("gridSlot")
+					.addClass("gridSlotRight")
+					.addClass("gridSlot" + ((looper % alternatorSize < alternatorSize/2) ? "a" : "b"))
+					.attr("data-dow", dowDateFormat(stamp))
+					.attr("data-slotInfo", convertDateForSlotInfo(stamp))
+					.appendTo(holder);
+			}
+			stamp = new Date(stamp.getTime() + (slotSize * 60 * 1000));
+			looper++;
+		}
+	}
+
+	function stubOutGrid(screenAdvance, days, slotSize, alternatorSize, hardCapStart, hardCapEnd) {
+		console.log("stubbing [" + screenAdvance + "], [" + days + "], [" + slotSize + "]");
+		var startOfDay = parseHardCap(hardCapStart);
+		var endOfDay = parseHardCap(hardCapEnd);
+		var oneDay = 24 * 60 * 60 * 1000;
+
+		var daysAheadOfSunday = startOfDay.getDay();
+		startOfDay = new Date(startOfDay.getTime() - (oneDay * daysAheadOfSunday));
+		endOfDay = new Date(endOfDay.getTime() - (oneDay * daysAheadOfSunday));
+
+		startOfDay = new Date(startOfDay.getTime() + (oneDay * screenAdvance * days));
+		endOfDay = new Date(endOfDay.getTime() + (oneDay * screenAdvance * days));
+
+		// console.log("starrt of day [" + startOfDay + "], end [" + endOfDay + "]");
+
+		buildSingleDayCol($("#timesHolder"), startOfDay, endOfDay, slotSize, alternatorSize, "&nbsp;", true);
+		for (var i = 0 ; i < days ; i++) {
+			var column = $("<div/>").addClass("dayCol").css("width", (100 / days) + "%").appendTo($("#dayGrid"));
+			buildSingleDayCol(column, startOfDay, endOfDay, slotSize, alternatorSize, "default", false);
+
+			startOfDay = new Date(startOfDay.getTime() + oneDay);
+			endOfDay = new Date(endOfDay.getTime() + oneDay);
+		}
+	}
+	/****** DOM BUILD - END *******/

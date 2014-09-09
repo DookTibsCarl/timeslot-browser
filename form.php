@@ -8,47 +8,33 @@
 	<script src="grid.js"></script>
 
 	<script>
-		function pageEmsForm(screensAhead) {
-			reloadEmsForm(screensAhead);
-		}
-
 		function handleSelection(selectionStart, selectionEnd) {
 			console.log("picker came back:");
 			console.log("[" +selectionStart + "],[" + selectionEnd + "]");
 			$("#demofield").val("we got [" + selectionStart + "] -----> [" + selectionEnd + "]");
-			$("#ems").dialog("close");
+			$("#emsCalendarDemo").dialog("close");
 		}
 
-		function reloadEmsForm(x, initial) {
-			console.log("reload form [" + x + "]");
+		function reloadEmsForm() {
+			initGrid({
+						targetSelector:"#emsCalendarDemo",
+						selectionCallback: handleSelection,
+						closedTimes: [
+							"Sun|7|0|10|0|closed",
+							"Fri|7|0|10|0|closed",
+							"Sat|7|0|10|0|closed",
 
-			var ems = $("#ems");
-			ems.html("reloading...");
-			ems.load("grid.php", {mode:"popup", popupPagerCallback:"pageEmsForm", screensAhead:x}, function() {
-				console.log("finished loading next week!");
-				performGridSetup({
-									selectionSize: -1,
-									popupSelectionCallback: handleSelection,
-									closedTimes: [
-										"Sun|7|0|10|0|closed",
-										"Fri|7|0|10|0|closed",
-										"Sat|7|0|10|0|closed",
+							"Fri|16|0|-1|-1|closed",
+							"Sat|16|0|-1|-1|closed"
+						]
+					});
 
-										"Fri|16|0|-1|-1|closed",
-										"Sat|16|0|-1|-1|closed"
-									]
-								});
-			});
-
-			if (initial) {
-				console.log("first time open");
-				  ems.dialog( "open" );
-			}
+			$("#emsCalendarDemo").dialog("open");
 		}
 
 		$(function() {
 			console.log("executing...");
-			var emsDialog = $( "#ems" ).dialog({
+			var emsDialog = $( "#emsCalendarDemo" ).dialog({
 				title: "Choose something",
 			  autoOpen: false,
 			  height: $(window).height() * .75,
@@ -68,7 +54,7 @@
 	<p>
 	<input id="launch-ems" type="button" value="spawn picker">
 
-	<div id="ems">
+	<div id="emsCalendarDemo">
 		demo content!
 	</div>
 
