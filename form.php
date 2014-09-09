@@ -16,6 +16,7 @@
 			console.log("picker came back:");
 			console.log("[" +selectionStart + "],[" + selectionEnd + "]");
 			$("#demofield").val("we got [" + selectionStart + "] -----> [" + selectionEnd + "]");
+			$("#ems").dialog("close");
 		}
 
 		function reloadEmsForm(x, initial) {
@@ -26,6 +27,7 @@
 			ems.load("grid.php", {mode:"popup", popupPagerCallback:"pageEmsForm", screensAhead:x}, function() {
 				console.log("finished loading next week!");
 				performGridSetup({
+									selectionSize: -1,
 									popupSelectionCallback: handleSelection,
 									closedTimes: [
 										"Sun|7|0|10|0|closed",

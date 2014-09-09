@@ -87,7 +87,7 @@
 	background-color: lightgrey;
 	margin-top: 5px;
 	top: 0px;
-	position: fixed;
+	// position: fixed;
 	width: 100%;
 }
 
@@ -96,4 +96,30 @@
 
 #statusLine {
 
+}
+
+#confirmWindow {
+	height: 90px;
+}
+
+#previewWindow {
+	height: 20px;
+}
+
+.simpleFloater {
+	width: 150px;
+	display: none;
+	position: absolute;
+	background-color: grey;
+	border-style: solid;
+	color: black;
+	font-size: 13px;
+
+	-webkit-user-select: none; /* Chrome/Safari */        
+	-moz-user-select: none; /* Firefox */
+	-ms-user-select: none; /* IE10+ */
+
+	/* Rules below not implemented in browsers yet */
+	-o-user-select: none;
+	user-select: none;
 }

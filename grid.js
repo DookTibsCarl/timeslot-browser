@@ -1,4 +1,15 @@
-// this isn't super robust. DOesn't handle overlapping appointments correctly for instance.
+// this isn't super robust. DOesn't handle overlapping appointments correctly for instance, appointments that span a day, etc.
+
+/*
+	var mouse = {x: 0, y: 0};
+
+	document.addEventListener('mousemove', function(e){ 
+	    mouse.x = e.clientX || e.pageX; 
+		mouse.y = e.clientY || e.pageY 
+	}, false);
+*/
+	var finalizedStart;
+	var finalizedEnd;
 
 	// var slotSize = 5; // how many minutes does a single slot on the grid equate to?
 	// var selectionSize = 12;
@@ -175,7 +186,10 @@
 	}
 
 	function performGridSetup(configObj) {
-		$("#confirmButton").attr("disabled", "disabled");
+		// $("#confirmButton").attr("disabled", "disabled");
+		$("#confirmWindow").hover(function(evt) {
+			hidePreviewWidget();
+		});
 
 		calGridCfg = configObj ? configObj : {};	
 		setConfigDefault("slotSize", 5);
@@ -220,6 +234,7 @@
 		markSpecialTimes(calGridCfg.bookedEvents, "booked");
 
 		if (calGridCfg.selectionSize != -1) { // we have preconfigured how long a time we need
+			/*
 			$(".gridSlotRight").click(function (evt) {
 				var completeBlock = getElPlusSibs(this, calGridCfg.selectionSize);
 				var outcomeBlob = isBlockFree(completeBlock, calGridCfg.selectionSize);
@@ -246,6 +261,7 @@
 					$("#debugStatus").html("FAIL [" + outcomeBlob.error + "]");
 				}
 			});
+			*/
 		} else {
 			// we want to let the user drag within a day to book a specific time
 			$(".gridSlotRight").mousedown(function (evt) {
@@ -254,6 +270,7 @@
 
 				if (outcomeBlob.status) {
 					console.log("start drag");
+					hidePreviewWidget();
 
 					$(".hovering").removeClass("hovering").html("");
 					$(".hovering2").removeClass("hovering2").html("");
@@ -261,6 +278,15 @@
 					handleDrag();
 					$("*").mouseup(function (evt) {
 						console.log("stop dragging");
+						if ($(".hovering").length > 0) {
+							// finalizedStart = completeBlock.first().attr("data-slotInfo");
+							// finalizedEnd = getElPlusSibs(completeBlock, $(".hovering").length + 1).last().attr("data-slotInfo");
+							finalizedStart = "AAA?"; finalizedEnd = "BBB?";
+
+							enableConfirmButtons(true);
+						} else {
+							hideConfirmWidget();
+						}
 						isDraggingFrom = null;
 					});
 				}
@@ -339,9 +365,15 @@
 				completeBlock.css("cursor", "");
 				completeBlock.addClass(classForHovering);
 				if (!altHoverBehavior) {
-					getBlockMidElement(completeBlock).html(extractTimeFromDateDescriptor(firstSlotInfo) + "->" + extractTimeFromDateDescriptor(lastSlotInfo, true));
+					// getBlockMidElement(completeBlock).html(extractTimeFromDateDescriptor(firstSlotInfo) + "->" + extractTimeFromDateDescriptor(lastSlotInfo, true));
+				} else {
+					var widgetPos = calculateWidgetPosition($(originBlock), "previewWindow");
+					var previewDate = extractDateFromSlotInfo(firstSlotInfo);
+					showPreviewWidget(widgetPos.left, widgetPos.top, previewDateFormat(previewDate));
 				}
 			} else {
+				hideConfirmWidget();
+				hidePreviewWidget();
 				completeBlock.css("cursor", "not-allowed");
 			}
 
@@ -373,10 +405,96 @@
 		var late = a.getTime() > b.getTime() ? a : b;
 
 		var earlyBlock = a.getTime() > b.getTime() ? dragTo : isDraggingFrom;
+		var lateBlock = a.getTime() > b.getTime() ? isDraggingFrom : dragTo;
 
 		var diff = (late.getTime() - early.getTime()) / 1000 / 60;
-		setStatus("BAR: " + early + " -> " + late + " (" + diff + " mins)");
+		// setStatus("BAR: " + early + " -> " + late + " (" + diff + " mins)");
+
+		// show in preview window
+		var widgetPos = calculateWidgetPosition(earlyBlock, "confirmWindow");
+
+		showConfirmWidget(widgetPos.left, widgetPos.top, "start: " + previewDateFormat(early) + "<br>" +
+											"end: " + previewDateFormat(late) + "<br>" +
+											"(" + diffFormat(diff) + ")",
+						false);
+
 		return { startBlock: earlyBlock, amount: diff / calGridCfg.slotSize };
+	}
+
+	function calculateWidgetPosition(originBlock, widgetName) {
+		var preview = $("#" + widgetName);
+		var spacer = 10;
+		var leftPos = originBlock.position().left + originBlock.width() + spacer;
+		if (originBlock.position().left > $("#calHolder").width() / 2) { leftPos = originBlock.position().left - preview.width() - spacer; }
+		var topPos = originBlock.position().top;
+
+		return { left: leftPos, top: topPos };
+	}
+
+	function hidePreviewWidget() { $("#previewWindow").css("display", "none"); }
+	function showPreviewWidget(x, y, content) {
+		console.log("show preview widget at [" + x + "],[" + y + "] -> [" + content + "]");
+		var w = $("#previewWindow");
+		w.css({ display: "block", left: x, top: y });
+		w.html(content);
+	}
+
+	function hideConfirmWidget() { $("#confirmWindow").css("display", "none"); }
+	function showConfirmWidget(x, y, content, enableButtons) {
+		var w = $("#confirmWindow");
+		w.css({ display: "block", left: x, top: y });
+
+		var statusHolder = $("#confirmWindow #confirmStatus");
+		statusHolder.html(content);
+
+		enableConfirmButtons(false);
+	}
+
+	function enableConfirmButtons(yeaOrNay) {
+		var btns = $("#confirmWindow input");
+		if (yeaOrNay) {
+			btns.removeAttr("disabled");
+		} else {
+			btns.attr("disabled", "disabled");
+		}
+	}
+
+	function previewOk() {
+		console.log("clicked ok");
+
+		var callbackFxn = calGridCfg.popupSelectionCallback;
+		if (callbackFxn) {
+			callbackFxn(finalizedStart, finalizedEnd);
+		} else {
+			console.log("No callback function ; must supply 'popupSelectionCallback' in 'performGridSetup'...");
+		}
+	}
+
+	function previewCancel() {
+		hideConfirmWidget();
+		$(".hovering").removeClass("hovering").html("");
+	}
+
+	function diffFormat(minutes) {
+		var hours = Math.floor(minutes / 60);
+		if (hours == 0) {
+			return minutes + " minutes";
+		} else {
+			var leftovers = minutes - (hours*60);
+			var rv =  hours + " hour" + (hours == 1 ? "" : "s");
+			if (leftovers != 0) {
+				rv +=  ", " + leftovers + " minutes";
+			}
+			return rv;
+		}
+	}
+
+	function previewDateFormat(d) {
+		if (d.getHours() > 12) {
+			return (d.getHours() - 12) + ":" + zeroPad(d.getMinutes()) + " PM";
+		} else {
+			return d.getHours() + ":" + zeroPad(d.getMinutes()) + (d.getHours() == 12 ? " PM" : " AM");
+		}
 	}
 
 	function setStatus(s) {
