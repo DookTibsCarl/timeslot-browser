@@ -1,4 +1,10 @@
+// 1. fix vertical positioning of preview/confirm window
+// 2. make reverse selections function better (should be able to select back from 10pm for instance
+// 3. make forward selections that hit end of day work
+//
 // this isn't super robust. DOesn't handle overlapping appointments correctly for instance, appointments that span a day, etc.
+// sort of a mess. javascript makes lots of decisions based on state of the visual grid and not on underlying data
+// just something fun I banged out "quickly"
 
 /*
 	var mouse = {x: 0, y: 0};
@@ -233,36 +239,7 @@
 		markSpecialTimes(calGridCfg.closedTimes, "closed");
 		markSpecialTimes(calGridCfg.bookedEvents, "booked");
 
-		if (calGridCfg.selectionSize != -1) { // we have preconfigured how long a time we need
-			/*
-			$(".gridSlotRight").click(function (evt) {
-				var completeBlock = getElPlusSibs(this, calGridCfg.selectionSize);
-				var outcomeBlob = isBlockFree(completeBlock, calGridCfg.selectionSize);
-
-				if (outcomeBlob.status) {
-					$("#debugStatus").html("ok to select!");
-					console.log("writeback please!");
-
-					var firstSlotInfo = $(this).attr("data-slotInfo");
-					var lastSlotInfo = calGridCfg.selectionSize == 1 ? firstSlotInfo : $(this).nextAll().slice(0,calGridCfg.selectionSize-1).last().attr("data-slotInfo");
-					var tmpTime = Date.parse(lastSlotInfo);
-					tmpTime += calGridCfg.slotSize * 60 * 1000;
-					var adjustedDate = new Date(tmpTime);
-
-					var callbackFxn = calGridCfg.popupSelectionCallback;
-					if (callbackFxn) {
-						// $("#demofield").val(firstSlotInfo + " - " + convertDateForSlotInfo(adjustedDate));
-						callbackFxn(firstSlotInfo, convertDateForSlotInfo(adjustedDate));	
-					} else {
-						console.log("No callback function ; must supply 'popupSelectionCallback' in 'performGridSetup'...");
-					}
-					$("#ems").dialog("close");
-				} else {
-					$("#debugStatus").html("FAIL [" + outcomeBlob.error + "]");
-				}
-			});
-			*/
-		} else {
+		if (calGridCfg.selectionSize == -1) { // we have preconfigured how long a time we need
 			// we want to let the user drag within a day to book a specific time
 			$(".gridSlotRight").mousedown(function (evt) {
 				var completeBlock = getElPlusSibs(this, 1);
@@ -281,7 +258,11 @@
 						if ($(".hovering").length > 0) {
 							// finalizedStart = completeBlock.first().attr("data-slotInfo");
 							// finalizedEnd = getElPlusSibs(completeBlock, $(".hovering").length + 1).last().attr("data-slotInfo");
-							finalizedStart = "AAA?"; finalizedEnd = "BBB?";
+							
+							var finalBlock = $(".hovering");
+							finalizedStart = finalBlock.first().attr("data-slotInfo");
+							finalizedEnd = finalBlock.last().next().attr("data-slotInfo");
+
 
 							enableConfirmButtons(true);
 						} else {
@@ -309,37 +290,6 @@
 				var numBlocksPreview = calGridCfg.selectionSize == -1 ? 1 : calGridCfg.selectionSize;
 				hilite(this, numBlocksPreview, evt.type=="mouseenter", altHoverBehavior);
 			}
-
-			/*
-			var numBlocksPreview = calGridCfg.selectionSize == -1 ? 1 : calGridCfg.selectionSize;
-			console.log("hovering [" + calGridCfg.selectionSize + "]/[" + numBlocksPreview + "]");
-			var completeBlock = getElPlusSibs(this, numBlocksPreview);
-
-			var firstSlotInfo = $(this).attr("data-slotInfo");
-			var lastSlotInfo = numBlocksPreview == 1 ? firstSlotInfo : $(this).nextAll().slice(0,calGridCfg.selectionSize-1).last().attr("data-slotInfo");
-
-			if (evt.type == "mouseenter") {
-				var outcomeBlob = isBlockFree(completeBlock, numBlocksPreview);
-				var outcome = outcomeBlob.error;
-
-				if (outcome == "") {
-					outcome = "ok!";
-					completeBlock.css("cursor", "");
-					completeBlock.addClass("hovering");
-					getBlockMidElement(completeBlock).html(extractTimeFromDateDescriptor(firstSlotInfo) + "->" + extractTimeFromDateDescriptor(lastSlotInfo, true));
-				} else {
-					completeBlock.css("cursor", "not-allowed");
-				}
-
-				$("#debugStatus").html("hovering over [" + firstSlotInfo + "] - " + outcome);
-			} else {
-				if (completeBlock.first().hasClass("hovering")) {
-					getBlockMidElement(completeBlock).html("");
-					completeBlock.removeClass("hovering");
-				}
-				$("#debugStatus").html("&nbsp;");
-			}
-			*/
 		});
 	}
 
