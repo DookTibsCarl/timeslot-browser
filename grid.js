@@ -403,11 +403,14 @@
 		b.setMonth(a.getMonth());
 		b.setDate(a.getDate());
 
+		console.log("handle drag FROM [" + a + "] TO [" + b + "]");
+
 		var early = a.getTime() > b.getTime() ? b : a;
 		var late = a.getTime() > b.getTime() ? a : b;
 
-		var earlyBlock = a.getTime() > b.getTime() ? dragTo : isDraggingFrom;
-		var lateBlock = a.getTime() > b.getTime() ? isDraggingFrom : dragTo;
+		var earlyBlock = $("[data-slotInfo='" + convertDateForSlotInfo(early) + "']");
+		// var earlyBlock = a.getTime() > b.getTime() ? dragTo : isDraggingFrom;
+		// var lateBlock = a.getTime() > b.getTime() ? isDraggingFrom : dragTo;
 
 		var diff = (late.getTime() - early.getTime()) / 1000 / 60;
 		// setStatus("BAR: " + early + " -> " + late + " (" + diff + " mins)");
@@ -428,7 +431,7 @@
 		var spacer = 10;
 		var leftPos = originBlock.position().left + originBlock.width() + spacer;
 		if (originBlock.position().left > $("#calHolder").width() / 2) { leftPos = originBlock.position().left - preview.width() - spacer; }
-		var topPos = originBlock.position().top;
+		var topPos = originBlock.position().top + spacer;
 
 		return { left: leftPos, top: topPos };
 	}
