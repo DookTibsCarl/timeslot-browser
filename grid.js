@@ -372,7 +372,9 @@
 					showPreviewWidget(widgetPos.left, widgetPos.top, previewDateFormat(previewDate));
 				}
 			} else {
-				hideConfirmWidget();
+				if (isDraggingFrom != null) {
+					hideConfirmWidget();
+				}
 				hidePreviewWidget();
 				completeBlock.css("cursor", "not-allowed");
 			}
