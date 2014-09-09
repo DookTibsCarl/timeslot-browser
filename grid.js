@@ -1,10 +1,18 @@
-// 1. fix vertical positioning of preview/confirm window
+// 1. fix vertical positioning of preview/confirm window (FIXED)
 // 2. make reverse selections function better (should be able to select back from 10pm for instance
 // 3. make forward selections that hit end of day work
 //
 // this isn't super robust. DOesn't handle overlapping appointments correctly for instance, appointments that span a day, etc.
 // sort of a mess. javascript makes lots of decisions based on state of the visual grid and not on underlying data
 // just something fun I banged out "quickly"
+
+
+	var mouse = {x: 0, y: 0};
+
+	document.addEventListener('mousemove', function(e){ 
+			mouse.x = e.clientX || e.pageX; 
+				mouse.y = e.clientY || e.pageY 
+	}, false);
 
 	var finalizedStart;
 	var finalizedEnd;
@@ -285,7 +293,6 @@
 			} else {
 				var altHoverBehavior = false;
 				if (calGridCfg.selectionSize == -1) {
-					setStatus("FOO: " + $(this).attr("data-slotInfo"));
 					// return;
 					altHoverBehavior = true;
 				}
@@ -307,7 +314,7 @@
 		var firstSlotInfo = $(originBlock).attr("data-slotInfo");
 		var lastSlotInfo = amount == 1 ? firstSlotInfo : $(originBlock).nextAll().slice(0,amount-1).last().attr("data-slotInfo");
 
-		console.log("showing highlight from [" + firstSlotInfo + "] -> [" + lastSlotInfo + "]");
+		// console.log("showing highlight from [" + firstSlotInfo + "] -> [" + lastSlotInfo + "]");
 
 		if (onOrOff) {
 			var outcomeBlob = isBlockFree(completeBlock, amount);
@@ -366,7 +373,6 @@
 		// var lateBlock = a.getTime() > b.getTime() ? isDraggingFrom : dragTo;
 
 		var diff = (late.getTime() - early.getTime()) / 1000 / 60;
-		// setStatus("BAR: " + early + " -> " + late + " (" + diff + " mins)");
 
 		// show in preview window
 		var widgetPos = calculateWidgetPosition(earlyBlock, "confirmWindow");
@@ -386,12 +392,19 @@
 		if (originBlock.position().left > $("#calHolder").width() / 2) { leftPos = originBlock.position().left - preview.width() - spacer; }
 		var topPos = originBlock.position().top + spacer;
 
+		var mainContainer = $(calGridCfg.targetSelector);
+		topPos += mainContainer.scrollTop();
+		
+		if (topPos + 50 >= mainContainer.height()) {
+			topPos -= 50;
+		}
+
 		return { left: leftPos, top: topPos };
 	}
 
 	function hidePreviewWidget() { $("#previewWindow").css("display", "none"); }
 	function showPreviewWidget(x, y, content) {
-		console.log("show preview widget at [" + x + "],[" + y + "] -> [" + content + "]");
+		// console.log("show preview widget at [" + x + "],[" + y + "] -> [" + content + "]");
 		var w = $("#previewWindow");
 		w.css({ display: "block", left: x, top: y });
 		w.html(content);
@@ -465,11 +478,6 @@
 		} else {
 			return d.getHours() + ":" + zeroPad(d.getMinutes()) + (d.getHours() == 12 ? " PM" : " AM");
 		}
-	}
-
-	function setStatus(s) {
-		var statusLine = $("#statusLine");
-		statusLine.html(s);
 	}
 
 	/****** DOM BUILD - START *******/
