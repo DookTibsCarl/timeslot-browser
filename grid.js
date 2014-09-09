@@ -175,6 +175,8 @@
 	}
 
 	function performGridSetup(configObj) {
+		$("#confirmButton").attr("disabled", "disabled");
+
 		calGridCfg = configObj ? configObj : {};	
 		setConfigDefault("slotSize", 5);
 		setConfigDefault("selectionSize", 12);
@@ -254,6 +256,7 @@
 					console.log("start drag");
 
 					$(".hovering").removeClass("hovering").html("");
+					$(".hovering2").removeClass("hovering2").html("");
 					isDraggingFrom = $(this);
 					handleDrag();
 					$("*").mouseup(function (evt) {
@@ -270,13 +273,15 @@
 				var dragData = handleDrag($(this));
 				hilite(dragData.startBlock, dragData.amount, evt.type=="mouseenter");
 			} else {
+				var altHoverBehavior = false;
 				if (calGridCfg.selectionSize == -1) {
 					setStatus("FOO: " + $(this).attr("data-slotInfo"));
-					return;
+					// return;
+					altHoverBehavior = true;
 				}
 
 				var numBlocksPreview = calGridCfg.selectionSize == -1 ? 1 : calGridCfg.selectionSize;
-				hilite(this, numBlocksPreview, evt.type=="mouseenter");
+				hilite(this, numBlocksPreview, evt.type=="mouseenter", altHoverBehavior);
 			}
 
 			/*
@@ -312,7 +317,12 @@
 		});
 	}
 
-	function hilite(originBlock, amount, onOrOff) {
+	function hilite(originBlock, amount, onOrOff, altHoverBehavior) {
+		if (altHoverBehavior == null) { altHoverBehavior = false; }
+		var classForHovering = "hovering";
+
+		if (altHoverBehavior) { classForHovering = "hovering2"; }
+
 		var completeBlock = getElPlusSibs(originBlock, amount);
 
 		var firstSlotInfo = $(originBlock).attr("data-slotInfo");
@@ -327,17 +337,21 @@
 			if (outcome == "") {
 				outcome = "ok!";
 				completeBlock.css("cursor", "");
-				completeBlock.addClass("hovering");
-				getBlockMidElement(completeBlock).html(extractTimeFromDateDescriptor(firstSlotInfo) + "->" + extractTimeFromDateDescriptor(lastSlotInfo, true));
+				completeBlock.addClass(classForHovering);
+				if (!altHoverBehavior) {
+					getBlockMidElement(completeBlock).html(extractTimeFromDateDescriptor(firstSlotInfo) + "->" + extractTimeFromDateDescriptor(lastSlotInfo, true));
+				}
 			} else {
 				completeBlock.css("cursor", "not-allowed");
 			}
 
 			$("#debugStatus").html("hovering over [" + firstSlotInfo + "] - " + outcome);
 		} else {
-			if (completeBlock.first().hasClass("hovering")) {
-				getBlockMidElement(completeBlock).html("");
-				completeBlock.removeClass("hovering");
+			if (completeBlock.first().hasClass(classForHovering)) {
+				if (!altHoverBehavior) {
+					getBlockMidElement(completeBlock).html("");
+				}
+				completeBlock.removeClass(classForHovering);
 			}
 			$("#debugStatus").html("&nbsp;");
 		}

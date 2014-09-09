@@ -19,7 +19,7 @@
 
 .gridSlot {
 	height: 4px;
-	font-size: 16px;
+	font-size: 13px;
 }
 
 .gridSlotRight {
@@ -49,6 +49,11 @@
 
 .hovering {
 	background-color:purple;
+	color: white;
+}
+
+.hovering2 {
+	background-color:blueviolet;
 	color: white;
 }
 
@@ -84,6 +89,9 @@
 	top: 0px;
 	position: fixed;
 	width: 100%;
+}
+
+#confirmButton {
 }
 
 #statusLine {
