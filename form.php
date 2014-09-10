@@ -15,9 +15,16 @@
 			$("#emsCalendarDemo").dialog("close");
 		}
 
-		function reloadEmsForm() {
-			initGrid({
+		function handlePaging(updatedScreenAdvance, startDate, endDate) {
+			console.log("need to handle paging [" + updatedScreenAdvance + "], [" + startDate + "], [" + endDate + "]");
+			reloadEmsForm(updatedScreenAdvance, false);
+		}
+
+		function reloadEmsForm(screensAhead, initial) {
+			var initObj = {
+						screensAhead: screensAhead,
 						targetSelector:"#emsCalendarDemo",
+						pagerCallback: handlePaging,
 						selectionCallback: handleSelection,
 						closedTimes: [
 							"Sun|7|0|10|0|closed",
@@ -27,9 +34,18 @@
 							"Fri|16|0|-1|-1|closed",
 							"Sat|16|0|-1|-1|closed"
 						]
-					});
+					};
 
-			$("#emsCalendarDemo").dialog("open");
+			if (screensAhead == 0) {
+				initObj.bookedEvents =  [ "2014|9|11|14|5|14|17|study group" ]
+			} else if (screensAhead == 1) {
+				initObj.bookedEvents =  [ "2014|9|16|12|5|14|17|dummy event" ]
+			}
+			initGrid(initObj);
+
+			if (initial) {
+				$("#emsCalendarDemo").dialog("open");
+			}
 		}
 
 		$(function() {

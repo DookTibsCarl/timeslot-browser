@@ -523,14 +523,20 @@
 		var holder = $("#navUi");
 		holder.empty();
 
+		// prev/next links should call some function - the grid needs fresh data to render the right subset of appointments
+
 		var prev = $("<span/>").appendTo(holder);
 		if (currScreensAhead <= 0) {
 			prev.html("Previous");
 		} else {
 			var prevLink = $("<a/>").attr("href", "#").html("Previous").appendTo(prev);
 			prevLink.click(function() {
-				calGridCfg.screensAhead = calGridCfg.screensAhead - 1;
-				initGrid(calGridCfg);
+				if (calGridCfg.pagerCallback) {
+					calGridCfg.pagerCallback(calGridCfg.screensAhead - 1, calculateWeekOffset(0, -1), calculateWeekOffset(1, -1));
+				} else {
+					calGridCfg.screensAhead = calGridCfg.screensAhead - 1;
+					initGrid(calGridCfg);
+				}
 			});
 		}
 
@@ -539,9 +545,26 @@
 		var next = $("<span/>").appendTo(holder);
 		var nextLink = $("<a/>").attr("href", "#").html("Next").appendTo(next);
 		nextLink.click(function() {
-			calGridCfg.screensAhead = calGridCfg.screensAhead + 1;
-			initGrid(calGridCfg);
+			if (calGridCfg.pagerCallback) {
+				calGridCfg.pagerCallback(calGridCfg.screensAhead + 1, calculateWeekOffset(0, 1), calculateWeekOffset(1, 1));
+			} else {
+				calGridCfg.screensAhead = calGridCfg.screensAhead + 1;
+				initGrid(calGridCfg);
+			}
 		});
+	}
+
+	function advanceDateByDays(d, days) {
+		return new Date(d.getTime() + days*24*60*60*1000);
+	}
+
+	function calculateWeekOffset(fencePost, direction) {
+		// if fencePost == 0: the start of the visible period (usually Sunday). If 1, the end of the visible period (usually Saturday)
+		// if direction == -1, we want the previous week ranges. if direction == 1, we want the next week's ranges
+		var d = fencePost == 0 ? startOfWeek : endOfWeek;
+		d = advanceDateByDays(d, calGridCfg.daysToShow * direction);
+
+		return d;
 	}
 
 	function parseHardCap(s) {
@@ -579,6 +602,7 @@
 		}
 	}
 
+	var startOfWeek;
 	function stubOutGrid(screenAdvance, days, slotSize, alternatorSize, hardCapStart, hardCapEnd) {
 		console.log("stubbing [" + screenAdvance + "], [" + days + "], [" + slotSize + "]");
 		var startOfDay = parseHardCap(hardCapStart);
@@ -592,10 +616,13 @@
 		startOfDay = new Date(startOfDay.getTime() + (oneDay * screenAdvance * days));
 		endOfDay = new Date(endOfDay.getTime() + (oneDay * screenAdvance * days));
 
+		startOfWeek = startOfDay;
+
 		// console.log("starrt of day [" + startOfDay + "], end [" + endOfDay + "]");
 
 		buildSingleDayCol($("#timesHolder"), startOfDay, endOfDay, slotSize, alternatorSize, "&nbsp;", true);
 		for (var i = 0 ; i < days ; i++) {
+			endOfWeek = endOfDay; // keep setting this
 			var column = $("<div/>").addClass("dayCol").css("width", (100 / days) + "%").appendTo($("#dayGrid"));
 			buildSingleDayCol(column, startOfDay, endOfDay, slotSize, alternatorSize, "default", false);
 
