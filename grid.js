@@ -301,6 +301,20 @@
 
 				var numBlocksPreview = calGridCfg.selectionSize == -1 ? 1 : calGridCfg.selectionSize;
 				hilite(this, numBlocksPreview, evt.type=="mouseenter", altHoverBehavior);
+				
+				
+				if (!altHoverBehavior) {
+					// show in preview window
+					var widgetPos = calculateWidgetPosition($(this), "confirmWindow");
+
+					var early = extractDateFromSlotInfo($(this).attr("data-slotInfo"));
+					var late = advanceDateByMinutes(early, calGridCfg.slotSize * calGridCfg.selectionSize);
+					var diff = (late.getTime() - early.getTime()) / 1000 / 60;
+					showConfirmWidget(widgetPos.left, widgetPos.top, "start: " + previewDateFormat(early) + "<br>" +
+														"end: " + previewDateFormat(late) + "<br>" +
+														"(" + diffFormat(diff) + ")",
+									false);
+				}
 			}
 		});
 	}
@@ -556,6 +570,10 @@
 
 	function advanceDateByDays(d, days) {
 		return new Date(d.getTime() + days*24*60*60*1000);
+	}
+
+	function advanceDateByMinutes(d, minutes) {
+		return new Date(d.getTime() + minutes*60*1000);
 	}
 
 	function calculateWeekOffset(fencePost, direction) {

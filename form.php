@@ -22,6 +22,7 @@
 
 		function reloadEmsForm(screensAhead, initial) {
 			var initObj = {
+						selectionSize: -1,
 						screensAhead: screensAhead,
 						targetSelector:"#emsCalendarDemo",
 						pagerCallback: handlePaging,
