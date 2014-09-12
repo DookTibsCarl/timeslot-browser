@@ -214,7 +214,9 @@
 		// used for instance in preventing people from picking times in the past, times today and in the past, etc.
 		if (configObj.closeOnAndBefore) {
 			var oneDay = 24*60*60*1000;
-			var closeSentinel = new Date(Date.parse(configObj.closeOnAndBefore) + oneDay);
+			// var closeSentinel = new Date(Date.parse(configObj.closeOnAndBefore) + oneDay);
+			// console.log("sentinel [" + closeSentinel + "]");
+			var closeSentinel = new Date(configObj.closeOnAndBefore.getTime());
 
 			var pastTimes = [];
 

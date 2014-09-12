@@ -48,17 +48,23 @@
 }
 
 .hovering {
-	background-color:purple;
+	background-color:green;
 	color: white;
 }
 
 .hovering2 {
-	background-color:blueviolet;
+	background-color:#33CC33;
 	color: white;
 }
 
 .closed {
-	background-color: red;
+	background-color: #3366FF;
+	color: white;
+}
+
+.inThePast {
+	background-color: blue;
+	color: white;
 }
 
 .booked {
@@ -77,10 +83,6 @@
 
 #debugStatus {
 	display: none;
-}
-
-.inThePast {
-	background-color: blue;
 }
 
 #gridUi {
