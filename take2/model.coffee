@@ -177,6 +177,13 @@ class window.TimeslotBrowser.Model
             neighbors.push(loopBooking)
 
     return { neighbors: neighbors, position: numToLeft }
+  
+  isBlockFree: (startTime, endTime, advance = false) ->
+    # console.log "isBlockFree? [" + startTime + "] / [" + endTime + "]"
+    fakeBooking = new TimeslotBrowser.Booking(startTime, TimeslotBrowser.DateUtils.advanceDateByMinutes(endTime, if advance then @calGridCfg.slotSize else 0), "", "placeholder")
+    neighborData = @getNeighborData(fakeBooking)
+    return neighborData.neighbors.length == 0
+
 
 class window.TimeslotBrowser.Booking
   @UNIQUE_PK = 1

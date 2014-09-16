@@ -8,6 +8,24 @@ class window.TimeslotBrowser
     if (!@calGridCfg[param])
       @calGridCfg[param] = val
 
+  setupListeners: () ->
+    console.log "setting up listeners"
+    thisHook = this
+    $(".gridSlotRight").hover((evt) ->
+      if false
+        console.log "BLAH"
+      else
+        altHoverBehavior = thisHook.calGridCfg.selectionSize == -1
+
+        numBlocksPreview = if thisHook.calGridCfg.selectionSize == -1 then 1 else thisHook.calGridCfg.selectionSize
+        thisHook.view.attemptToHighlight(thisHook.model, this, numBlocksPreview, evt.type=="mouseenter", altHoverBehavior)
+    )
+
+    # hide the preview widget when we move onto confirmwindow, onto another booking, or out of frame
+    $("#confirmWindow").hover((evt) => @view.hidePreviewWidget())
+    $(".booking").hover((evt) => @view.hidePreviewWidget())
+    $("#calHolder").mouseout((evt) => @view.hidePreviewWidget())
+
   initGrid: (@calGridCfg) ->
     if @calGridCfg == null then @calGridCfg = {}
 
@@ -42,3 +60,5 @@ class window.TimeslotBrowser
     $(window).resize(() =>
       @view.displayBookings(@model)
     )
+
+    @setupListeners()

@@ -41,6 +41,13 @@ class window.TimeslotBrowser.DateUtils
   @convertDateForSlotInfo: (d) ->
     return d.getFullYear() + "-" + TimeslotBrowser.DateUtils.zeroPad(d.getMonth() + 1) + "-" + TimeslotBrowser.DateUtils.zeroPad(d.getDate()) + "," + TimeslotBrowser.DateUtils.zeroPad(d.getHours()) + ":" + TimeslotBrowser.DateUtils.zeroPad(d.getMinutes());
 
+  # takes "YYYY-MM-DD,HH:MM" and returns a date
+  @extractDateFromSlotInfo: (si) ->
+    dateAndTime = si.split(",")
+    dateChunks = (dateAndTime[0]).split("-")
+    timeChunks = (dateAndTime[1]).split(":")
+    return new Date(dateChunks[0], dateChunks[1]-1, dateChunks[2], timeChunks[0], timeChunks[1]);
+
   # takes a date and returns "3:05 PM"
   @previewDateFormat: (d) ->
     if (d.getHours() > 12)

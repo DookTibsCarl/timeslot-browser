@@ -48,8 +48,8 @@ class window.TimeslotBrowser.View
       startOfDay = new Date(startOfDay.getTime() + TimeslotBrowser.DateUtils.ONE_DAY);
       endOfDay = new Date(endOfDay.getTime() + TimeslotBrowser.DateUtils.ONE_DAY);
 
-  buildOutDom: (cfg) -> 
-    @baseElement = $(cfg.targetSelector)
+  buildOutDom: (@calGridCfg) -> 
+    @baseElement = $(@calGridCfg.targetSelector)
     @baseElement.empty()
     gridUiEl = $("<div/>").attr("id", "gridUi").appendTo(@baseElement);
     $("<span/>").css("margin-left", 5).attr("id", "navUi").html("PAGE NAV HERE").appendTo(gridUiEl);
@@ -69,15 +69,97 @@ class window.TimeslotBrowser.View
     $("<div/>").attr("id", "highlighter").appendTo(@baseElement);
 
     ###
-    setupPrevNext(cfg.screensAhead);
+    setupPrevNext(@calGridCfg.screensAhead);
     ###
 
-    @stubOutGrid(cfg.screensAhead,
-                cfg.daysToShow,
-                cfg.slotSize,
-                cfg.alternatorSize,
-                cfg.hardCapStart,
-                cfg.hardCapEnd);
+    @stubOutGrid(@calGridCfg.screensAhead,
+                @calGridCfg.daysToShow,
+                @calGridCfg.slotSize,
+                @calGridCfg.alternatorSize,
+                @calGridCfg.hardCapStart,
+                @calGridCfg.hardCapEnd);
+
+  getElPlusSibs: (block, numSiblings) ->
+    startBlock = $(block)
+    if numSiblings == -1
+      completeBlock = startBlock.nextAll().add(startBlock)
+    else
+      completeBlock = startBlock.nextAll().slice(0,numSiblings-1).add(startBlock)
+    return completeBlock
+
+  getBlockFirstElement: (block) ->
+    return b.first()
+
+  getBlockMidElement: (block) ->
+    mid = Math.floor(block.length / 2)
+    if b.length % 2 == 0 then mid--
+    return b.eq(mid)
+
+  attemptToHighlight: (model, originBlockReference, amount, onOrOff, altHoverBehavior = false) ->
+    classForHovering = if altHoverBehavior then "hovering2" else "hovering"
+    completeBlock = @getElPlusSibs(originBlockReference, amount)
+
+    originBlock = $(originBlockReference)
+
+    firstSlotInfo = originBlock.attr("data-slotInfo")
+    lastSlotInfo = if amount == 1 then firstSlotInfo else originBlock.nextAll().slice(0,amount-1).last().attr("data-slotInfo")
+
+    if onOrOff
+      isBlockFree = model.isBlockFree(
+                      TimeslotBrowser.DateUtils.extractDateFromSlotInfo(firstSlotInfo),
+                      TimeslotBrowser.DateUtils.extractDateFromSlotInfo(lastSlotInfo),
+                      true)
+      console.log "IS BLOCK FREE NOT YET PROPERLY IMPLEMENTED"
+
+      if isBlockFree
+        completeBlock.css("cursor", "").addClass(classForHovering)
+        if !altHoverBehavior
+          # @getBlockMidElement(completeBlock).html("some message")
+        else
+          widgetPos = @calculateWidgetPosition(originBlock, "previewWindow")
+          previewDate = TimeslotBrowser.DateUtils.extractDateFromSlotInfo(firstSlotInfo)
+          @showPreviewWidget(widgetPos.left, widgetPos.top, TimeslotBrowser.DateUtils.previewDateFormat(previewDate))
+      else
+        if @isDraggingFrom != undefined
+          @hideConfirmWidget()
+        @hidePreviewWidget()
+        completeBlock.css("cursor", "not-allowed")
+    else
+      if (completeBlock.first().hasClass(classForHovering))
+        if !altHoverBehavior
+          getBlockMidElement(completeBlock).html("")
+        completeBlock.removeClass(classForHovering)
+
+  hidePreviewWidget: () -> $("#previewWindow").css("display", "none")
+  showPreviewWidget: (x, y, content) ->
+    w = $("#previewWindow")
+    w.css({ display: "block", left: x, top: y })
+    w.html(content)
+
+  hideConfirmWidget: () -> $("#confirmWindow").css("display", "none")
+  showConfirmWidget: (x, y, content, enableButtons) ->
+    w = $("#confirmWindow")
+    w.css({ display: "block", left: x, top: y })
+
+    statusHolder = $("#confirmWindow #confirmStatus")
+    statusHolder.html(content)
+
+    @enableConfirmButtons(false)
+  
+  calculateWidgetPosition: (originBlock, widgetName) ->
+    preview = $("#" + widgetName)
+    spacer = 10
+    if originBlock.position().left > $("#calHolder").width() / 2
+      leftPos = originBlock.position().left - preview.width() - spacer
+    else
+      leftPos = originBlock.position().left + originBlock.width() + spacer
+    topPos = originBlock.position().top + spacer
+
+    mainContainer = $(@calGridCfg.targetSelector)
+    topPos += mainContainer.scrollTop()
+
+    if topPos + 50 >= mainContainer.height() then topPos -= 50
+    return { left: leftPos, top: topPos }
 
   displayBookings: (mdl) ->
     bookings = mdl.bookings
@@ -124,4 +206,4 @@ class window.TimeslotBrowser.View
           height: h
           left: l
           top: startDom.position().top
-        }).addClass("booking").addClass(booking.style).html(booking.description).appendTo(@baseElement)
+        }).addClass("booking").addClass(booking.style).html(booking.description).prependTo(@baseElement)
