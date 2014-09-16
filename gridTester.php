@@ -8,7 +8,8 @@ include_once('sql_db.php');
 	<!-- <link href="/global_stock/css/signage/rec_center.css" type="text/css" rel="stylesheet" /> -->
 	<link href="grid.css" type="text/css" rel="stylesheet" />
 	<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
-	<script src="grid.js"></script>
+	<!-- <script src="grid.js"></script> -->
+	<script src="timeslotBrowser_0_1b.js"></script>
 
 
 	<script>
@@ -16,20 +17,22 @@ include_once('sql_db.php');
 			console.log("foobar [" + a + "]/[" + b + "]");
 		}
 		$(function() {
-			initGrid({
+			var tsb = new TimeslotBrowser();
+			tsb.initGrid({
 						selectionCallback: foobar,
 						targetSelector:"#tibs",
-						closeOnAndBefore: "2014-09-08",
+						// closeOnAndBefore: "2014-09-08",
 						closedTimes: [
 							"Sun|7|0|10|0|closed",
+							"Fri|16|0|-1|-1|closed",
 							"Fri|7|0|10|0|closed",
 							"Sat|7|0|10|0|closed",
-
-							"Fri|16|0|-1|-1|closed",
 							"Sat|16|0|-1|-1|closed"
 						],
 						bookedEvents: [
-							"2014|9|11|14|5|14|17|study group"
+							"2014|9|17|9|0|10|30|breakfast",
+							"2014|9|17|10|5|12|0|first class",
+							"2014|9|19|14|5|14|57|study group"
 						]
 					});
 		});
@@ -37,7 +40,7 @@ include_once('sql_db.php');
 </head>
 <body>
 
-<div id="tibs"></div>
+<div id="tibs" class="sanity"></div>
 
 </body>
 </html>

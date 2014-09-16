@@ -3,6 +3,12 @@
 	width: 100%;
 }
 
+.sanityTemp {
+	-moz-box-sizing: border-box;
+	-webkit-box-sizing: border-box;
+	box-sizing: border-box;
+}
+
 .times {
 	width: 10%;
 	float:left;
