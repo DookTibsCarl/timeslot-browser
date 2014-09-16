@@ -37,8 +37,8 @@ class window.TimeslotBrowser
     @model.sortBookings()
     # @model.printBookings("set!")
 
-    @view.displayBookings(@model.bookings)
+    @view.displayBookings(@model)
 
     $(window).resize(() =>
-      @view.displayBookings(@model.bookings)
+      @view.displayBookings(@model)
     )

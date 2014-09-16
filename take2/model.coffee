@@ -57,7 +57,7 @@ class window.TimeslotBrowser.Model
   getDayStorageKey: (d) ->
     return d.getFullYear() + "-" + TimeslotBrowser.DateUtils.zeroPad(d.getMonth() + 1) + "-" + TimeslotBrowser.DateUtils.zeroPad(d.getDate())
 
-  recordAppointment: (start, end, clz, desc) ->
+  recordBooking: (start, end, clz, desc) ->
     if end == null
       end = @getLastSlotForDate(start)
     adjustedStart = @adjustDateForSlotSize(start, -1)
@@ -92,14 +92,14 @@ class window.TimeslotBrowser.Model
         for z in [1,2,3,4]
           chunks[z] = parseInt(chunks[z])
 
-        @recordAppointment(new Date(actualDay[0], actualDay[1]-1, actualDay[2], chunks[1], chunks[2]),
+        @recordBooking(new Date(actualDay[0], actualDay[1]-1, actualDay[2], chunks[1], chunks[2]),
                     if chunks[3] == -1 then null else new Date(actualDay[0], actualDay[1]-1, actualDay[2], chunks[3], chunks[4]),
                     descriptor, chunks[5])
       else
         for z in [0..6]
           chunks[z] = parseInt(chunks[z])
 
-        @recordAppointment(new Date(chunks[0], chunks[1]-1, chunks[2], chunks[3], chunks[4]),
+        @recordBooking(new Date(chunks[0], chunks[1]-1, chunks[2], chunks[3], chunks[4]),
                     if chunks[5] == -1 then null else new Date(chunks[0], chunks[1]-1, chunks[2], chunks[5], chunks[6]),
                     descriptor, chunks[7])
 
@@ -122,7 +122,66 @@ class window.TimeslotBrowser.Model
       )
       @bookings[key] = value
 
+  # given a starting time slot, returns info on the appointments that overlap this time
+  #
+  # NOT TESTED AT ALL!
+  getBookingsAtTime: (d) ->
+    # @calGridCfg.slotSize;
+    key = @getDayStorageKey(d)
+    storage = @bookings[key]
+    
+    rv = []
+    if storage != undefined
+      for b in storage
+        if (b.start.getTime() <= d.getTime() and b.end.getTime() > d.getTime())
+          rv.push(b)
+
+    return rv
+
+  ###
+  given a specific booking b, get data about neighbors. Specifically what are the others, what's the max number of neighbors it will 
+  overlap with, what should its position be relative to those neighbors, etc.
+  for now this is going to be somewhat naive...imagine we have the following appointments on a given day:
+    9am - 10:30am: breakfast
+    10am - noon: study
+    11:45am - 3pm: lab
+  And I'm trying to figure out how to render "study". Ideally I want to know that it has breakfast and lab as neighbors, but no
+  more than a single booking overlaps at any given time. This would let me do stuff like render all three at 50% column width for instance.
+  This is a little tricky though, and also it's unclear how many overlapping appointments we even need to support! So for now, I'm going
+  to treat this as having two neighbors. This leads to 33% column width on these guys which is a little weird, but I'm writing this so 
+  we could enact a more sophisticated algorithm down the line (which would probably involve precalculating all appointments that hit any given
+  5 minute block once up front, and then checking each block that b includes when calculating neighbor data)
+  ###
+  getNeighborData: (booking) ->
+    key = @getDayStorageKey(booking.start)
+    storage = @bookings[key]
+    neighbors = []
+    numToLeft = 0
+    passeOurselves = false
+    if storage != undefined
+      for loopBooking in storage
+        if (loopBooking.end.getTime() <= booking.start.getTime())
+          continue
+        else if (loopBooking.start.getTime() >= booking.end.getTime())
+          break
+        else
+          # it's a neighbor! (or ourself)
+          if (loopBooking.id != booking.id)
+            passedOurselves = true
+
+          if (loopBooking.id != booking.id)
+            if (loopBooking.start.getTime() < booking.start.getTime())
+              numToLeft++
+            else if (loopBooking.start.getTime() == booking.start.getTime() and !passedOurselves)
+              numToLeft++
+            neighbors.push(loopBooking)
+
+    return { neighbors: neighbors, position: numToLeft }
 
 class window.TimeslotBrowser.Booking
+  @UNIQUE_PK = 1
+
   constructor: (@start, @end, @style, @description) ->
     # console.log "building appointment obj"
+    @id = @constructor.UNIQUE_PK++
+    console.log "built appt with [#{@id}]"

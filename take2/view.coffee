@@ -79,13 +79,8 @@ class window.TimeslotBrowser.View
                 cfg.hardCapStart,
                 cfg.hardCapEnd);
 
-  getNeighborData: (bookings, b) ->
-    # THIS SHOULD LIVE IN THE MODEL!!!!!!! PUT IT THERE WHEN I IMPLEMENT!!!!!
-    # should return what?
-    console.log "getMaxNeighbors not yet implemented! need this for overlapping appointments"
-    return 0
-
-  displayBookings: (bookings) ->
+  displayBookings: (mdl) ->
+    bookings = mdl.bookings
     $(".booking").remove()
     for key, data of bookings
       console.log "add appointments for [#{key}]..."
@@ -102,22 +97,31 @@ class window.TimeslotBrowser.View
           console.log "warning; booking outside displayable range"
           continue
 
-        numNeighbors = @getNeighborData(bookings, booking)
-        widthFactor = numNeighbors + 1
+        neighborData = mdl.getNeighborData(booking)
 
-        w = startDom.width() / widthFactor
+        # position & dimensions
+        borderPixels = parseInt(startDom.css('border-left'))
+
+        l = startDom.position().left + borderPixels
+        if neighborData.neighbors.length == 0
+          w = startDom.width()
+        else
+          # multiple bookings overlap...
+          padder = startDom.width() * .01
+          widthFactor = neighborData.neighbors.length + 1
+          w = startDom.width() / widthFactor - padder
+          l += neighborData.position * (startDom.width() / widthFactor)
+
         if (endDom.length == 0)
           lastSlotOnDay = startDom.nextAll().last()
           h = lastSlotOnDay.position().top - startDom.position().top + lastSlotOnDay.height()
         else
           h = endDom.position().top - startDom.position().top
 
-        borderPixels = parseInt(startDom.css('border-left'))
-
         $("<div/>").css({
           position: "absolute"
           width: w
           height: h
-          left: startDom.position().left + borderPixels
+          left: l
           top: startDom.position().top
         }).addClass("booking").addClass(booking.style).html(booking.description).appendTo(@baseElement)
