@@ -33,6 +33,19 @@ class window.TimeslotBrowser.DateUtils
   @headerDateFormat: (d) ->
     return TimeslotBrowser.DateUtils.prettyDowNames[d.getDay()] + ", " + TimeslotBrowser.DateUtils.prettyMonthNames[d.getMonth()] + " " + d.getDate()
 
+  @diffFormat: (minutes) ->
+    hours = Math.floor(minutes / 60)
+    if hours == 0
+      return minutes + " minutes"
+    else
+      leftovers = minutes - (hours * 60)
+      rv = hours + " hour" + (if hours == 1 then "" else "s")
+
+      if leftovers != 0
+        rv += ", " + leftovers + " minutes"
+
+      return rv
+
   # takes a date and returns "Sun"
   @dowDateFormat: (d) ->
     return TimeslotBrowser.DateUtils.prettyDowNames[d.getDay()]

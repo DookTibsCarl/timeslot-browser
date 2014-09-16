@@ -2,7 +2,7 @@ class window.TimeslotBrowser.View
 
   buildSingleDayCol: (holder, start, end, slotSize, alternatorSize, header, showStamp) ->
     if (header == "default")
-      header = TimeslotBrowser.DateUtils.headerDateFormat(start);
+      header = @dutils.headerDateFormat(start);
 
     $("<div/>").addClass("gridSlot").css("height", 15).html(header).appendTo(holder)
     stamp = start
@@ -11,14 +11,14 @@ class window.TimeslotBrowser.View
     while (stamp.getTime() <= end.getTime())
       if (showStamp)
         slot = $("<div/>").addClass("gridSlot").appendTo(holder)
-        slot.html(if looper % alternatorSize == 0 then TimeslotBrowser.DateUtils.previewDateFormat(stamp) else "&nbsp;")
+        slot.html(if looper % alternatorSize == 0 then @dutils.previewDateFormat(stamp) else "&nbsp;")
       else
         $("<div/>")# .addClass("available")
           .addClass("gridSlot")
           .addClass("gridSlotRight")
           .addClass("gridSlot" + (if (looper % alternatorSize < alternatorSize/2) then "a" else "b"))
-          .attr("data-dow", TimeslotBrowser.DateUtils.dowDateFormat(stamp))
-          .attr("data-slotInfo", TimeslotBrowser.DateUtils.convertDateForSlotInfo(stamp))
+          .attr("data-dow", @dutils.dowDateFormat(stamp))
+          .attr("data-slotInfo", @dutils.convertDateForSlotInfo(stamp))
           .appendTo(holder)
 
       stamp = new Date(stamp.getTime() + (slotSize * 60 * 1000));
@@ -26,15 +26,15 @@ class window.TimeslotBrowser.View
 
   stubOutGrid: (screenAdvance, days, slotSize, alternatorSize, hardCapStart, hardCapEnd) ->
     console.log("stubbing [" + screenAdvance + "], [" + days + "], [" + slotSize + "]");
-    startOfDay = TimeslotBrowser.DateUtils.parseHardCap(hardCapStart);
-    endOfDay = TimeslotBrowser.DateUtils.parseHardCap(hardCapEnd);
+    startOfDay = @dutils.parseHardCap(hardCapStart);
+    endOfDay = @dutils.parseHardCap(hardCapEnd);
 
     daysAheadOfSunday = startOfDay.getDay();
-    startOfDay = new Date(startOfDay.getTime() - (TimeslotBrowser.DateUtils.ONE_DAY * daysAheadOfSunday));
-    endOfDay = new Date(endOfDay.getTime() - (TimeslotBrowser.DateUtils.ONE_DAY * daysAheadOfSunday));
+    startOfDay = new Date(startOfDay.getTime() - (@dutils.ONE_DAY * daysAheadOfSunday));
+    endOfDay = new Date(endOfDay.getTime() - (@dutils.ONE_DAY * daysAheadOfSunday));
 
-    startOfDay = new Date(startOfDay.getTime() + (TimeslotBrowser.DateUtils.ONE_DAY * screenAdvance * days));
-    endOfDay = new Date(endOfDay.getTime() + (TimeslotBrowser.DateUtils.ONE_DAY * screenAdvance * days));
+    startOfDay = new Date(startOfDay.getTime() + (@dutils.ONE_DAY * screenAdvance * days));
+    endOfDay = new Date(endOfDay.getTime() + (@dutils.ONE_DAY * screenAdvance * days));
 
     @startOfWeek = startOfDay;
 
@@ -45,10 +45,12 @@ class window.TimeslotBrowser.View
       column = $("<div/>").addClass("dayCol").css("width", (100 / days) + "%").appendTo($("#dayGrid"));
       @buildSingleDayCol(column, startOfDay, endOfDay, slotSize, alternatorSize, "default", false);
 
-      startOfDay = new Date(startOfDay.getTime() + TimeslotBrowser.DateUtils.ONE_DAY);
-      endOfDay = new Date(endOfDay.getTime() + TimeslotBrowser.DateUtils.ONE_DAY);
+      startOfDay = new Date(startOfDay.getTime() + @dutils.ONE_DAY);
+      endOfDay = new Date(endOfDay.getTime() + @dutils.ONE_DAY);
 
   buildOutDom: (@calGridCfg) -> 
+    @dutils = TimeslotBrowser.DateUtils
+
     @baseElement = $(@calGridCfg.targetSelector)
     @baseElement.empty()
     gridUiEl = $("<div/>").attr("id", "gridUi").appendTo(@baseElement);
@@ -63,8 +65,8 @@ class window.TimeslotBrowser.View
 
     $("<div/>").attr("id", "confirmStatus").appendTo(confirmWindowEl);
     buttonHolder = $("<div/>").appendTo(confirmWindowEl);
-    # $("<input/>").attr({type: "button", value: "cancel"}).click(previewCancel).appendTo(buttonHolder);
-    # $("<input/>").attr({type: "button", value: "ok"}).click(previewOk).appendTo(buttonHolder);
+    $("<input/>").attr({type: "button", value: "cancel"}).click(( () => @previewCancel() )).appendTo(buttonHolder);
+    $("<input/>").attr({type: "button", value: "ok"}).click(( () => @previewOk() )).appendTo(buttonHolder);
 
     $("<div/>").attr("id", "highlighter").appendTo(@baseElement);
 
@@ -79,6 +81,18 @@ class window.TimeslotBrowser.View
                 @calGridCfg.hardCapStart,
                 @calGridCfg.hardCapEnd);
 
+  previewOk: () ->
+    callbackFxn = @calGridCfg.selectionCallback
+    if callbackFxn != undefined
+      callbackFxn(@finalizedStart, @finalizedEnd)
+    else
+      console.log("No callback function ; must supply 'selectionCallback' in 'performGridSetup'...")
+    @previewCancel()
+
+  previewCancel: () ->
+    @hideConfirmWidget()
+    $(".hovering").removeClass("hovering").html("")
+
   getElPlusSibs: (block, numSiblings) ->
     startBlock = $(block)
     if numSiblings == -1
@@ -88,12 +102,85 @@ class window.TimeslotBrowser.View
     return completeBlock
 
   getBlockFirstElement: (block) ->
-    return b.first()
+    return block.first()
 
   getBlockMidElement: (block) ->
     mid = Math.floor(block.length / 2)
-    if b.length % 2 == 0 then mid--
-    return b.eq(mid)
+    if block.length % 2 == 0 then mid--
+    return block.eq(mid)
+
+  attemptToStartDrag: (model, originBlockReference) ->
+    completeBlock = @getElPlusSibs(originBlockReference, 1)
+    firstSlotDate = @dutils.extractDateFromSlotInfo(completeBlock.first().attr("data-slotInfo"))
+    blockIsFree = model.isBlockFree(firstSlotDate, firstSlotDate, true)
+    if blockIsFree
+      console.log "start drag"
+      @hidePreviewWidget()
+      for hoverClass in ["hovering", "hovering2"]
+        $(".#{hoverClass}").removeClass(hoverClass).html("")
+
+      @isDraggingFrom = $(originBlockReference)
+      @handleDrag()
+
+      $("*").mouseup(() => @stopDragging())
+
+  handleDrag: (dragTo = @isDraggingFrom) ->
+    console.log "handling drag, from:"
+    console.log (@isDraggingFrom)
+    a = @dutils.extractDateFromSlotInfo(@isDraggingFrom.attr("data-slotInfo"))
+    b = @dutils.extractDateFromSlotInfo(dragTo.attr("data-slotInfo"))
+
+    # force on a single day
+    b.setFullYear(a.getFullYear())
+    b.setMonth(a.getMonth())
+    b.setDate(a.getDate())
+
+    if b.getTime() < a.getTime()
+      #reverse drag - need to bump the isDraggingFrom one unit so that you can reverse drag from an appointment boundary for instance...
+      a = new Date(a.getTime() + (@calGridCfg.slotSize * 60 * 1000))
+
+    early = if a.getTime() > b.getTime() then b else a;
+    late = if a.getTime() > b.getTime() then a else b;
+
+    earlyBlock = $("[data-slotInfo='" + @dutils.convertDateForSlotInfo(early) + "']")
+
+    diff = (late.getTime() - early.getTime()) / 1000 / 60;
+
+    # show in preview window
+    widgetPos = @calculateWidgetPosition(earlyBlock, "confirmWindow");
+
+    @showConfirmWidget(widgetPos.left, widgetPos.top, 
+                      "start: " + @dutils.previewDateFormat(early) + "<br>" +
+                      "end: " + @dutils.previewDateFormat(late) + "<br>" +
+                      "(" + @dutils.diffFormat(diff) + ")",
+                      false)
+
+    return { startBlock: earlyBlock, amount: diff / @calGridCfg.slotSize }
+
+
+  stopDragging: () ->
+    $("*").off("mouseup")
+    console.log "STOP!"
+    finalBlock = $(".hovering")
+    if finalBlock.length > 0
+      console.log "hovering window vis"
+      console.log "slot size [" + @calGridCfg.slotSize + "]"
+      @finalizedStart = finalBlock.first().attr("data-slotInfo")
+      @finalizedEnd = finalBlock.last().attr("data-slotInfo")
+
+      bumpDate = @dutils.extractDateFromSlotInfo(@finalizedEnd)
+      bumpDate = new Date(bumpDate.getTime() + @calGridCfg.slotSize * 60 * 1000)
+      @finalizedEnd = @dutils.convertDateForSlotInfo(bumpDate)
+
+      console.log "finished with [" + @finalizedStart + "]/[" + @finalizedEnd + "]"
+
+      @enableConfirmButtons(true)
+    else
+      console.log "hovering window gone"
+      @hideConfirmWidget()
+
+    @isDraggingFrom = undefined
+
 
   attemptToHighlight: (model, originBlockReference, amount, onOrOff, altHoverBehavior = false) ->
     classForHovering = if altHoverBehavior then "hovering2" else "hovering"
@@ -104,21 +191,22 @@ class window.TimeslotBrowser.View
     firstSlotInfo = originBlock.attr("data-slotInfo")
     lastSlotInfo = if amount == 1 then firstSlotInfo else originBlock.nextAll().slice(0,amount-1).last().attr("data-slotInfo")
 
-    if onOrOff
-      isBlockFree = model.isBlockFree(
-                      TimeslotBrowser.DateUtils.extractDateFromSlotInfo(firstSlotInfo),
-                      TimeslotBrowser.DateUtils.extractDateFromSlotInfo(lastSlotInfo),
-                      true)
-      console.log "IS BLOCK FREE NOT YET PROPERLY IMPLEMENTED"
+    # console.log ("check #{firstSlotInfo} -> #{lastSlotInfo}")
 
-      if isBlockFree
+    if onOrOff
+      blockIsFree = model.isBlockFree(
+                      @dutils.extractDateFromSlotInfo(firstSlotInfo),
+                      @dutils.extractDateFromSlotInfo(lastSlotInfo),
+                      true)#firstSlotInfo == lastSlotInfo)
+
+      if blockIsFree
         completeBlock.css("cursor", "").addClass(classForHovering)
         if !altHoverBehavior
           # @getBlockMidElement(completeBlock).html("some message")
         else
           widgetPos = @calculateWidgetPosition(originBlock, "previewWindow")
-          previewDate = TimeslotBrowser.DateUtils.extractDateFromSlotInfo(firstSlotInfo)
-          @showPreviewWidget(widgetPos.left, widgetPos.top, TimeslotBrowser.DateUtils.previewDateFormat(previewDate))
+          previewDate = @dutils.extractDateFromSlotInfo(firstSlotInfo)
+          @showPreviewWidget(widgetPos.left, widgetPos.top, @dutils.previewDateFormat(previewDate))
       else
         if @isDraggingFrom != undefined
           @hideConfirmWidget()
@@ -127,7 +215,7 @@ class window.TimeslotBrowser.View
     else
       if (completeBlock.first().hasClass(classForHovering))
         if !altHoverBehavior
-          getBlockMidElement(completeBlock).html("")
+          @getBlockMidElement(completeBlock).html("")
         completeBlock.removeClass(classForHovering)
 
   hidePreviewWidget: () -> $("#previewWindow").css("display", "none")
@@ -145,6 +233,13 @@ class window.TimeslotBrowser.View
     statusHolder.html(content)
 
     @enableConfirmButtons(false)
+
+  enableConfirmButtons: (yeaOrNay) ->
+    btns = $("#confirmWindow input")
+    if yeaOrNay
+      btns.removeAttr("disabled")
+    else
+      btns.attr("disabled", "disabled")
   
   calculateWidgetPosition: (originBlock, widgetName) ->
     preview = $("#" + widgetName)
@@ -167,8 +262,8 @@ class window.TimeslotBrowser.View
     for key, data of bookings
       console.log "add appointments for [#{key}]..."
       for booking in data
-        startSlotInfo = TimeslotBrowser.DateUtils.convertDateForSlotInfo(booking.start)
-        endSlotInfo = TimeslotBrowser.DateUtils.convertDateForSlotInfo(booking.end)
+        startSlotInfo = @dutils.convertDateForSlotInfo(booking.start)
+        endSlotInfo = @dutils.convertDateForSlotInfo(booking.end)
         console.log "\t" + startSlotInfo + "->" + endSlotInfo + ", " + booking.description
 
         startDom = $("[data-slotInfo='" + startSlotInfo + "']")#.addClass(booking.style)

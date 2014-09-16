@@ -11,14 +11,39 @@ class window.TimeslotBrowser
   setupListeners: () ->
     console.log "setting up listeners"
     thisHook = this
+
+
+    if @calGridCfg.selectionSize == -1
+      $(".gridSlotRight").mousedown((evt) ->
+        thisHook.view.attemptToStartDrag(thisHook.model, this)
+      )
+
+
     $(".gridSlotRight").hover((evt) ->
-      if false
-        console.log "BLAH"
+      if thisHook.view.isDraggingFrom != undefined
+        dragData = thisHook.view.handleDrag($(this))
+        thisHook.view.attemptToHighlight(thisHook.model, dragData.startBlock, dragData.amount, evt.type=="mouseenter")
       else
         altHoverBehavior = thisHook.calGridCfg.selectionSize == -1
 
         numBlocksPreview = if thisHook.calGridCfg.selectionSize == -1 then 1 else thisHook.calGridCfg.selectionSize
         thisHook.view.attemptToHighlight(thisHook.model, this, numBlocksPreview, evt.type=="mouseenter", altHoverBehavior)
+
+        ###
+				if (!altHoverBehavior) {
+					// show in preview window
+					var widgetPos = calculateWidgetPosition($(this), "confirmWindow");
+
+					var early = extractDateFromSlotInfo($(this).attr("data-slotInfo"));
+					var late = advanceDateByMinutes(early, calGridCfg.slotSize * calGridCfg.selectionSize);
+					var diff = (late.getTime() - early.getTime()) / 1000 / 60;
+					showConfirmWidget(widgetPos.left, widgetPos.top, "start: " + previewDateFormat(early) + "<br>" +
+														"end: " + previewDateFormat(late) + "<br>" +
+														"(" + diffFormat(diff) + ")",
+									false);
+				}
+        ###
+          
     )
 
     # hide the preview widget when we move onto confirmwindow, onto another booking, or out of frame
