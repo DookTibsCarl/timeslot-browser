@@ -5,7 +5,9 @@
 	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.js"></script>
 	<link rel="stylesheet" href="//code.jquery.com/ui/1.11.1/themes/smoothness/jquery-ui.css">
 	<link href="grid.css" type="text/css" rel="stylesheet" />
-	<script src="grid.js"></script>
+	<!--<script src="grid.js"></script> -->
+
+	<script src="timeslotBrowser_0_1b.js"></script>
 
 	<script>
 		function handleSelection(selectionStart, selectionEnd) {
@@ -42,7 +44,8 @@
 			} else if (screensAhead == 1) {
 				initObj.bookedEvents =  [ "2014|9|16|12|5|14|17|dummy event" ]
 			}
-			initGrid(initObj);
+			var tsb = new TimeslotBrowser();
+			tsb.initGrid(initObj);
 
 			if (initial) {
 				$("#emsCalendarDemo").dialog("open");

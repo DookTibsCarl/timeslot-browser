@@ -8,6 +8,10 @@ include_once('sql_db.php');
 	<!-- <link href="/global_stock/css/signage/rec_center.css" type="text/css" rel="stylesheet" /> -->
 	<link href="grid.css" type="text/css" rel="stylesheet" />
 	<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+
+<!--<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jquerymobile/1.4.3/jquery.mobile.min.css" />-->
+<!-- <script src="//ajax.googleapis.com/ajax/libs/jquerymobile/1.4.3/jquery.mobile.min.js"></script> -->
+
 	<!-- <script src="grid.js"></script> -->
 	<script src="timeslotBrowser_0_1b.js"></script>
 
@@ -20,6 +24,7 @@ include_once('sql_db.php');
 			var tsb = new TimeslotBrowser();
 			tsb.initGrid({
 						selectionCallback: foobar,
+							selectionSize: -1,
 						targetSelector:"#tibs",
 						// closeOnAndBefore: "2014-09-08",
 						closedTimes: [
@@ -40,7 +45,9 @@ include_once('sql_db.php');
 </head>
 <body>
 
+
 <div id="tibs" class="sanity"></div>
+<div id="debugger"></div>
 
 </body>
 </html>

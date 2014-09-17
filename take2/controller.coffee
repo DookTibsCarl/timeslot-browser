@@ -10,41 +10,71 @@ class window.TimeslotBrowser
 
   setupListeners: () ->
     console.log "setting up listeners"
+    @setupMouseListeners()
+    @setupTouchListeners()
+
+  setupTouchListeners: () ->
     thisHook = this
 
-
     if @calGridCfg.selectionSize == -1
-      $(".gridSlotRight").mousedown((evt) ->
+      $(".gridSlotRight").on("touchstart", (evt) ->
+        originDiv = $(this) # where you tapped
+        $("<div/>").html("tap [" + originDiv.attr("data-slotInfo") + "]").prependTo($("#debugger"))
         thisHook.view.attemptToStartDrag(thisHook.model, this)
       )
 
+      $(".gridSlotRight").on("touchmove", (evt) ->
+        evt.preventDefault()
 
-    $(".gridSlotRight").hover((evt) ->
-      if thisHook.view.isDraggingFrom != undefined
-        dragData = thisHook.view.handleDrag($(this))
-        thisHook.view.attemptToHighlight(thisHook.model, dragData.startBlock, dragData.amount, evt.type=="mouseenter")
-      else
-        altHoverBehavior = thisHook.calGridCfg.selectionSize == -1
+        if (evt.originalEvent.touches.length == 1)
+          touch = evt.originalEvent.touches[0]
+          originDiv = $(this) # where you started dragging from
+          dragDiv = $(document.elementFromPoint(touch.clientX, touch.clientY))
 
-        numBlocksPreview = if thisHook.calGridCfg.selectionSize == -1 then 1 else thisHook.calGridCfg.selectionSize
-        thisHook.view.attemptToHighlight(thisHook.model, this, numBlocksPreview, evt.type=="mouseenter", altHoverBehavior)
+          dragData = thisHook.view.handleDrag($(dragDiv))
+          console.log dragData
+          # $("<div/>").html("moving [" + originDiv.attr("data-slotInfo") + "]/[" + dragDiv.attr("data-slotInfo") + "]!").prependTo($("#debugger"))
+          $("<div/>").html("moving [" + dragData + "]").prependTo($("#debugger"))
+          $(".hovering").removeClass("hovering")
+          thisHook.view.attemptToHighlight(thisHook.model, dragData.startBlock, dragData.amount, true)
 
-        ###
-				if (!altHoverBehavior) {
-					// show in preview window
-					var widgetPos = calculateWidgetPosition($(this), "confirmWindow");
+      )
 
-					var early = extractDateFromSlotInfo($(this).attr("data-slotInfo"));
-					var late = advanceDateByMinutes(early, calGridCfg.slotSize * calGridCfg.selectionSize);
-					var diff = (late.getTime() - early.getTime()) / 1000 / 60;
-					showConfirmWidget(widgetPos.left, widgetPos.top, "start: " + previewDateFormat(early) + "<br>" +
-														"end: " + previewDateFormat(late) + "<br>" +
-														"(" + diffFormat(diff) + ")",
-									false);
-				}
-        ###
-          
-    )
+  setupMouseListeners: () ->
+    thisHook = this
+
+    if @calGridCfg.selectionSize == -1
+      $(".gridSlotRight").mousedown((evt) ->
+        $("#debugger").html("mousedown!")
+        thisHook.view.attemptToStartDrag(thisHook.model, this)
+      )
+
+      $(".gridSlotRight").hover((evt) ->
+        if thisHook.view.isDraggingFrom != undefined
+          dragData = thisHook.view.handleDrag($(this))
+          thisHook.view.attemptToHighlight(thisHook.model, dragData.startBlock, dragData.amount, evt.type=="mouseenter")
+        else
+          altHoverBehavior = thisHook.calGridCfg.selectionSize == -1
+
+          numBlocksPreview = if thisHook.calGridCfg.selectionSize == -1 then 1 else thisHook.calGridCfg.selectionSize
+          thisHook.view.attemptToHighlight(thisHook.model, this, numBlocksPreview, evt.type=="mouseenter", altHoverBehavior)
+
+          ###
+          if (!altHoverBehavior) {
+            // show in preview window
+            var widgetPos = calculateWidgetPosition($(this), "confirmWindow");
+
+            var early = extractDateFromSlotInfo($(this).attr("data-slotInfo"));
+            var late = advanceDateByMinutes(early, calGridCfg.slotSize * calGridCfg.selectionSize);
+            var diff = (late.getTime() - early.getTime()) / 1000 / 60;
+            showConfirmWidget(widgetPos.left, widgetPos.top, "start: " + previewDateFormat(early) + "<br>" +
+                              "end: " + previewDateFormat(late) + "<br>" +
+                              "(" + diffFormat(diff) + ")",
+                    false);
+          }
+          ###
+            
+      )
 
     # hide the preview widget when we move onto confirmwindow, onto another booking, or out of frame
     $("#confirmWindow").hover((evt) => @view.hidePreviewWidget())

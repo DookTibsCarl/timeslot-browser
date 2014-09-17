@@ -123,12 +123,12 @@ class window.TimeslotBrowser.View
       @handleDrag()
 
       $("*").mouseup(() => @stopDragging())
+      $(".gridSlotRight").on("touchend", () => @stopDragging())
 
   handleDrag: (dragTo = @isDraggingFrom) ->
-    console.log "handling drag, from:"
-    console.log (@isDraggingFrom)
     a = @dutils.extractDateFromSlotInfo(@isDraggingFrom.attr("data-slotInfo"))
     b = @dutils.extractDateFromSlotInfo(dragTo.attr("data-slotInfo"))
+    console.log "handling drag, from: " + a + " to " + b
 
     # force on a single day
     b.setFullYear(a.getFullYear())
@@ -141,6 +141,8 @@ class window.TimeslotBrowser.View
 
     early = if a.getTime() > b.getTime() then b else a;
     late = if a.getTime() > b.getTime() then a else b;
+
+    $("#debugger").html( "handling drag, from: " + early + " to " + late)
 
     earlyBlock = $("[data-slotInfo='" + @dutils.convertDateForSlotInfo(early) + "']")
 
@@ -160,7 +162,7 @@ class window.TimeslotBrowser.View
 
   stopDragging: () ->
     $("*").off("mouseup")
-    console.log "STOP!"
+    $(".gridSlotRight").off("touchend")
     finalBlock = $(".hovering")
     if finalBlock.length > 0
       console.log "hovering window vis"
