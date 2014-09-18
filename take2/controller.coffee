@@ -1,7 +1,7 @@
 class window.TimeslotBrowser
   constructor: () ->
     console.log "constructing after separation"
-    @view = new TimeslotBrowser.View()
+    @view = new TimeslotBrowser.View(this)
     @model = new TimeslotBrowser.Model()
 
   setConfigDefault: (param, val) ->
@@ -115,8 +115,8 @@ class window.TimeslotBrowser
           loopDate = TimeslotBrowser.DateUtils.advanceDateByDays(loopDate, 1)
         else
           break
+      @model.storeBookings(pastTimes, "inThePast");
 
-    @model.storeBookings(pastTimes, "inThePast");
     @model.storeBookings(@calGridCfg.closedTimes, "closed");
     @model.storeBookings(@calGridCfg.bookedEvents, "booked");
 

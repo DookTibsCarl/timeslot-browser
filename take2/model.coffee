@@ -92,7 +92,7 @@ class window.TimeslotBrowser.Model
   ###
   storeBookings: (bookingData, descriptor) ->
     console.log "storing [#{bookingData}] as [#{descriptor}]"
-    return if bookingData == null
+    return if bookingData == undefined
 
     for res in bookingData
       chunks = res.split("|")

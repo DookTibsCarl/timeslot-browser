@@ -1,5 +1,7 @@
 class window.TimeslotBrowser.View
 
+  constructor: (@controller) ->
+
   buildSingleDayCol: (holder, start, end, slotSize, alternatorSize, header, showStamp) ->
     if (header == "default")
       header = @dutils.headerDateFormat(start);
@@ -70,9 +72,7 @@ class window.TimeslotBrowser.View
 
     $("<div/>").attr("id", "highlighter").appendTo(@baseElement);
 
-    ###
-    setupPrevNext(@calGridCfg.screensAhead);
-    ###
+    @setupPrevNext(@calGridCfg.screensAhead);
 
     @stubOutGrid(@calGridCfg.screensAhead,
                 @calGridCfg.daysToShow,
@@ -80,6 +80,43 @@ class window.TimeslotBrowser.View
                 @calGridCfg.alternatorSize,
                 @calGridCfg.hardCapStart,
                 @calGridCfg.hardCapEnd);
+
+  setupPrevNext: (currScreensAhead) ->
+    holder = $("#navUi")
+    holder.empty()
+
+    # prev/next links should call some function - the grid needs fresh data to render the right subset of appointments
+    prev = $("<span/>").appendTo(holder)
+    if (currScreensAhead <= 0)
+      prev.html("Previous")
+    else
+      prevLink = $("<a/>").attr("href", "#").html("Previous").appendTo(prev)
+
+      prevLink.click(() =>
+        if @calGridCfg.pagerCallback
+          @calGridCfg.pagerCallback(@calGridCfg.screensAhead - 1, @calculatePseudoWeekOffset(0, -1), @calculatePseudoWeekOffset(1, -1));
+        else
+          @calGridCfg.screensAhead = @calGridCfg.screensAhead - 1;
+          @controller.initGrid(@calGridCfg);
+      )
+
+    $("<span/>").html(" | ").appendTo(holder)
+
+    next = $("<span/>").appendTo(holder)
+    nextLink = $("<a/>").attr("href", "#").html("Next").appendTo(next)
+
+    nextLink.click(() =>
+      if @calGridCfg.pagerCallback
+        @calGridCfg.pagerCallback(@calGridCfg.screensAhead + 1, @calculatePseudoWeekOffset(0, 1), @calculatePseudoWeekOffset(1, 1));
+      else
+        @calGridCfg.screensAhead = @calGridCfg.screensAhead + 1;
+        @controller.initGrid(@calGridCfg);
+    )
+
+  calculatePseudoWeekOffset: (fencePost, direction) ->
+    d = if fencePost == 0 then @startOfWeek else @endOfWeek
+    d = @dutils.advanceDateByDays(d, @calGridCfg.daysToShow * direction)
+    return d
 
   previewOk: () ->
     callbackFxn = @calGridCfg.selectionCallback
@@ -260,7 +297,7 @@ class window.TimeslotBrowser.View
     mainContainer = $(@calGridCfg.targetSelector)
     topPos += mainContainer.scrollTop()
 
-    console.log(topPos + "..." + originBlock.parent().height())
+    # console.log(topPos + "..." + originBlock.parent().height())
 
     if topPos + 100 >= originBlock.parent().height() then topPos -= 100
     return { left: leftPos, top: topPos }

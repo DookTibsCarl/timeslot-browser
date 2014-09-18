@@ -29,6 +29,7 @@
 						targetSelector:"#emsCalendarDemo",
 						pagerCallback: handlePaging,
 						selectionCallback: handleSelection,
+						closeOnAndBefore: new Date(),
 						closedTimes: [
 							"Sun|7|0|10|0|closed",
 							"Fri|7|0|10|0|closed",
