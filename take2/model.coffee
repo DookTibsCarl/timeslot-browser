@@ -68,7 +68,17 @@ class window.TimeslotBrowser.Model
       key = @getDayStorageKey(adjustedStart)
       storage = @bookings[key]
       if storage == undefined then storage = []
-      storage.push(new TimeslotBrowser.Booking(adjustedStart, adjustedEnd, clz, desc))
+      b = new TimeslotBrowser.Booking(adjustedStart, adjustedEnd, clz, desc)
+
+      doIncludeBooking = true
+      neighbors = @getNeighborData(b)
+      for n in neighbors.neighbors
+        if n.style == "inThePast"
+          doIncludeBooking = false
+          break
+
+      if doIncludeBooking
+        storage.push(b)
       @bookings[key] = storage
     else
       console.log "this booking spans days; not supported"
@@ -154,6 +164,7 @@ class window.TimeslotBrowser.Model
   ###
   getNeighborData: (booking) ->
     key = @getDayStorageKey(booking.start)
+    # console.log "get neighbors for [" + booking.start + "] -> [" + booking.end + "]...key is [" + key + "]"
     storage = @bookings[key]
     neighbors = []
     numToLeft = 0
@@ -194,4 +205,4 @@ class window.TimeslotBrowser.Booking
       @id = -99
     else
       @id = @constructor.UNIQUE_PK++
-    console.log "built appt with [#{@id}]"
+    # console.log "built appt with [#{@id}]"
