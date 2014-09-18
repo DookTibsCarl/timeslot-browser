@@ -105,14 +105,14 @@ class window.TimeslotBrowser
     @model.setAbsoluteRanges(@view.startOfWeek, @view.endOfWeek)
 
     if (@calGridCfg.closeOnAndBefore)
-      closeSentinel = new Date(@calGridCfg.closeOnAndBefore.getTime());
+      closeSentinel = new Date(@calGridCfg.closeOnAndBefore.date.getTime());
       pastTimes = [];
       loopDate = new Date(@view.startOfWeek.getTime())
       loopDate.setHours(0); loopDate.setMinutes(0); loopDate.setSeconds(0); loopDate.setMilliseconds(0);
 
       while true
         if (loopDate.getTime() <= closeSentinel.getTime())
-          pastTimes.push(loopDate.getFullYear() + "|" + (loopDate.getMonth()+1) + "|" + loopDate.getDate() + "|" + @view.startOfWeek.getHours() + "|" + @view.startOfWeek.getMinutes() + "|-1|-1|past")
+          pastTimes.push(loopDate.getFullYear() + "|" + (loopDate.getMonth()+1) + "|" + loopDate.getDate() + "|" + @view.startOfWeek.getHours() + "|" + @view.startOfWeek.getMinutes() + "|-1|-1|" + @calGridCfg.closeOnAndBefore.description)
           loopDate = TimeslotBrowser.DateUtils.advanceDateByDays(loopDate, 1)
         else
           break

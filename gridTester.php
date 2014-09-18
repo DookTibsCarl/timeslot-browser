@@ -26,7 +26,7 @@ include_once('sql_db.php');
 						selectionCallback: foobar,
 							selectionSize: -1,
 						targetSelector:"#tibs",
-						closeOnAndBefore: new Date(2014,8,16),
+						closeOnAndBefore: {description:"demo", date: new Date(2014,8,16)},
 						// closeOnAndBefore: new Date(),
 						closedTimes: [
 							"Sun|7|0|10|0|closed",

@@ -13,6 +13,36 @@ class window.TimeslotBrowser.Model
   setConfig: (@calGridCfg) ->
     console.log "setting cfg on model"
 
+  # what if something like 2am-noon is on the schedule? or 6pm to midnight? things that
+  # have ANY portion of their time in the day should have their ends "snapped" to the final slot
+  adjustDatesForDisplayableRange: (start, end) ->
+    todayMin = @getMinMaxForDate(start, 0);
+    todayMax = @getMinMaxForDate(start, 1);
+
+    startTime = start.getTime()
+    endTime = end.getTime()
+    minTime = todayMin.getTime()
+    maxTime = todayMax.getTime()
+
+    # console.log("for [" + start + "], today min is [" + todayMin + "], max is [" + todayMax + "]")
+    if (startTime < minTime)
+      if (endTime > minTime and endTime <= maxTime)
+        # e.g., 6am-noon -- snap start to min, leave end time alone
+        start = todayMin
+      else if (endTime > minTime)
+        # e.g. 6am - midnight -- snap start to min, snap end to max
+        start = todayMin
+        end = todayMax
+      # else e.g. something like 2am-3am; we can ignore this
+    else if (startTime < maxTime)
+      if (endTime > maxTime)
+        # e.g something like noon-11:45pm -- leave start alone, snap end to max
+        end = todayMax
+      # else e.g. something like 2pm-3pm; we can leave this all alone
+    # else something like 11pm-midnight; we can ignore this
+    
+    return [start, end]
+
   # if a start/end stamp doesn't correspond exactly to our granularity level, adjust it
   adjustDateForSlotSize: (d, dir) ->
     if d == null
@@ -27,7 +57,17 @@ class window.TimeslotBrowser.Model
       d = new Date(d.getTime() + (minuteAdjustment * 60 * 1000));
     d.setSeconds(0)
 
+
     return d;
+
+  getMinMaxForDate: (d, minOrMax) ->
+    rv = new Date(d.getTime())
+    srcDate = if minOrMax == 1 then @veryLastSlot else @veryFirstSlot
+    rv.setHours(srcDate.getHours())
+    rv.setMinutes(srcDate.getMinutes());
+    rv.setSeconds(srcDate.getSeconds());
+    rv.setMilliseconds(srcDate.getMilliseconds());
+    return rv
 
   setAbsoluteRanges: (@veryFirstSlot, @veryLastSlot) ->
     console.log "setting absolute ranges (first and last visible slot) to [#{veryFirstSlot}], [#{veryLastSlot}]"
@@ -60,15 +100,20 @@ class window.TimeslotBrowser.Model
   recordBooking: (start, end, clz, desc) ->
     if end == null
       end = @getLastSlotForDate(start)
+
+    originalTimeDescriptor = TimeslotBrowser.DateUtils.previewDateFormat(start) + "-" + TimeslotBrowser.DateUtils.previewDateFormat(end)
+
+    [start, end] = @adjustDatesForDisplayableRange(start, end)
+
     adjustedStart = @adjustDateForSlotSize(start, -1)
     adjustedEnd = @adjustDateForSlotSize(end, 1)
-    # console.log "block off [#{adjustedStart}] -> [#{adjustedEnd}], #{clz}, #{desc}"
+    console.log "block off [#{adjustedStart}] -> [#{adjustedEnd}], #{clz}, #{desc}"
 
     if (adjustedStart.getFullYear() == adjustedEnd.getFullYear() and adjustedStart.getMonth() == adjustedEnd.getMonth() and adjustedStart.getDate() == adjustedEnd.getDate())
       key = @getDayStorageKey(adjustedStart)
       storage = @bookings[key]
       if storage == undefined then storage = []
-      b = new TimeslotBrowser.Booking(adjustedStart, adjustedEnd, clz, desc)
+      b = new TimeslotBrowser.Booking(adjustedStart, adjustedEnd, clz, originalTimeDescriptor, desc)
 
       doIncludeBooking = true
       neighbors = @getNeighborData(b)
@@ -193,7 +238,7 @@ class window.TimeslotBrowser.Model
     return { neighbors: neighbors, position: numToLeft }
   
   isBlockFree: (startTime, endTime, advance = false) ->
-    fakeBooking = new TimeslotBrowser.Booking(startTime, TimeslotBrowser.DateUtils.advanceDateByMinutes(endTime, if advance then @calGridCfg.slotSize else 0), "", "placeholder", true)
+    fakeBooking = new TimeslotBrowser.Booking(startTime, TimeslotBrowser.DateUtils.advanceDateByMinutes(endTime, if advance then @calGridCfg.slotSize else 0), "", "", "placeholder", true)
     # console.log "isBlockFree? [" + fakeBooking.start + "] / [" + fakeBooking.end + "]"
     neighborData = @getNeighborData(fakeBooking)
     return neighborData.neighbors.length == 0
@@ -202,7 +247,7 @@ class window.TimeslotBrowser.Model
 class window.TimeslotBrowser.Booking
   @UNIQUE_PK = 1
 
-  constructor: (@start, @end, @style, @description, fake = false) ->
+  constructor: (@start, @end, @style, @originalTimeDescriptor, @description, fake = false) ->
     # console.log "building appointment obj"
     if fake
       @id = -99

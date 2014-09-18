@@ -306,11 +306,11 @@ class window.TimeslotBrowser.View
     bookings = mdl.bookings
     $(".booking").remove()
     for key, data of bookings
-      console.log "add appointments for [#{key}]..."
+      # console.log "add appointments for [#{key}]..."
       for booking in data
         startSlotInfo = @dutils.convertDateForSlotInfo(booking.start)
         endSlotInfo = @dutils.convertDateForSlotInfo(booking.end)
-        console.log "\t" + startSlotInfo + "->" + endSlotInfo + ", " + booking.description
+        # console.log "\t" + startSlotInfo + "->" + endSlotInfo + ", " + booking.description
 
         startDom = $("[data-slotInfo='" + startSlotInfo + "']")#.addClass(booking.style)
         endDom = $("[data-slotInfo='" + endSlotInfo + "']")#.addClass(booking.style)
@@ -325,7 +325,7 @@ class window.TimeslotBrowser.View
           l = 0
           w = "100%"
         else
-          console.log "got [" + neighborData.neighbors.length + "] neighbor"
+          # console.log "got [" + neighborData.neighbors.length + "] neighbor"
           l = ((neighborData.position / (neighborData.neighbors.length+1)) * 100) + "%"
           w = (100 / ((neighborData.neighbors.length)+1)) + "%"
 
