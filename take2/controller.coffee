@@ -83,6 +83,7 @@ class window.TimeslotBrowser
 
   initGrid: (@calGridCfg) ->
     if @calGridCfg == null then @calGridCfg = {}
+    @model.clearBookings()
 
     if !@calGridCfg.targetSelector
       console.log "error - no target selector defined"

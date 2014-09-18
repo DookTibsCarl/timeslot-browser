@@ -113,6 +113,9 @@ class window.TimeslotBrowser.Model
                     if chunks[5] == -1 then null else new Date(chunks[0], chunks[1]-1, chunks[2], chunks[5], chunks[6]),
                     descriptor, chunks[7])
 
+  clearBookings: () ->
+    @bookings = {}
+
   printBookings: (desc) ->
     for key, value of @bookings
       console.log "#{desc}: [#{key}]"
