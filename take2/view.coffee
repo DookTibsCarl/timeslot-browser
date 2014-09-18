@@ -244,18 +244,25 @@ class window.TimeslotBrowser.View
       btns.attr("disabled", "disabled")
   
   calculateWidgetPosition: (originBlock, widgetName) ->
-    preview = $("#" + widgetName)
+    baseLeft = originBlock.parent().position().left
+    baseTop = originBlock.position().top
+
+    # console.log(baseLeft + "," + baseTop)
+
+    widget = $("#" + widgetName)
     spacer = 10
-    if originBlock.position().left > $("#calHolder").width() / 2
-      leftPos = originBlock.position().left - preview.width() - spacer
+    if baseLeft > $("#calHolder").width() / 2
+      leftPos = baseLeft - widget.width() - spacer
     else
-      leftPos = originBlock.position().left + originBlock.width() + spacer
-    topPos = originBlock.position().top + spacer
+      leftPos = baseLeft + originBlock.width() + spacer
+    topPos = baseTop + spacer + 50
 
     mainContainer = $(@calGridCfg.targetSelector)
     topPos += mainContainer.scrollTop()
 
-    if topPos + 50 >= mainContainer.height() then topPos -= 50
+    console.log(topPos + "..." + originBlock.parent().height())
+
+    if topPos + 100 >= originBlock.parent().height() then topPos -= 100
     return { left: leftPos, top: topPos }
 
   displayBookings: (mdl) ->
