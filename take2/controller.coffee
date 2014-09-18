@@ -112,8 +112,10 @@ class window.TimeslotBrowser
 
     @view.displayBookings(@model)
 
+    ###
     $(window).resize(() =>
       @view.displayBookings(@model)
     )
+    ###
 
     @setupListeners()

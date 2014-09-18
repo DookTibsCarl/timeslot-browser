@@ -277,30 +277,22 @@ class window.TimeslotBrowser.View
           continue
 
         neighborData = mdl.getNeighborData(booking)
-
-        # position & dimensions
-        borderPixels = parseInt(startDom.css('border-left'))
-
-        l = startDom.position().left + borderPixels
         if neighborData.neighbors.length == 0
-          w = startDom.width()
+          l = 0
+          w = "100%"
         else
-          # multiple bookings overlap...
-          padder = startDom.width() * .01
-          widthFactor = neighborData.neighbors.length + 1
-          w = startDom.width() / widthFactor - padder
-          l += neighborData.position * (startDom.width() / widthFactor)
+          console.log "got [" + neighborData.neighbors.length + "] neighbor"
+          l = ((neighborData.position / (neighborData.neighbors.length+1)) * 100) + "%"
+          w = (100 / ((neighborData.neighbors.length)+1)) + "%"
 
-        if (endDom.length == 0)
-          lastSlotOnDay = startDom.nextAll().last()
-          h = lastSlotOnDay.position().top - startDom.position().top + lastSlotOnDay.height()
-        else
-          h = endDom.position().top - startDom.position().top
+        minutesDifference = (booking.end.getTime() - booking.start.getTime()) / (60 * 1000)
+        numChunks = minutesDifference / @calGridCfg.slotSize
+        h = numChunks * startDom.first().height()
 
         $("<div/>").css({
-          position: "absolute"
+          position: "relative"
           width: w
           height: h
           left: l
-          top: startDom.position().top
-        }).addClass("booking").addClass(booking.style).html(booking.description).prependTo(@baseElement)
+          top: 0
+        }).addClass("booking").addClass(booking.style).html(booking.description).appendTo(startDom)

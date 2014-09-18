@@ -21,6 +21,7 @@
 
 .dayCol {
 	float: left;
+	position: relative;
 }
 
 .gridSlot {

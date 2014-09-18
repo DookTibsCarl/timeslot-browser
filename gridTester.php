@@ -35,9 +35,9 @@ include_once('sql_db.php');
 							"Sat|16|0|-1|-1|closed"
 						],
 						bookedEvents: [
-							"2014|9|17|9|0|10|30|breakfast",
-							"2014|9|17|10|5|12|0|first class",
-							"2014|9|19|14|5|14|57|study group"
+							"2014|9|17|9|0|10|30|breakfast"
+							, "2014|9|17|10|5|12|0|first class"
+							, "2014|9|19|14|5|14|57|study group"
 						]
 					});
 		});
