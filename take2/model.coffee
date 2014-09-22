@@ -107,7 +107,7 @@ class window.TimeslotBrowser.Model
 
     adjustedStart = @adjustDateForSlotSize(start, -1)
     adjustedEnd = @adjustDateForSlotSize(end, 1)
-    console.log "block off [#{adjustedStart}] -> [#{adjustedEnd}], #{clz}, #{desc}"
+    # console.log "block off [#{adjustedStart}] -> [#{adjustedEnd}], #{clz}, #{desc}"
 
     if (adjustedStart.getFullYear() == adjustedEnd.getFullYear() and adjustedStart.getMonth() == adjustedEnd.getMonth() and adjustedStart.getDate() == adjustedEnd.getDate())
       key = @getDayStorageKey(adjustedStart)

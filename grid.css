@@ -108,21 +108,33 @@
 }
 
 #confirmWindow {
-	height: 90px;
+	height: 80px;
+}
+
+.confirmButtonHolder {
+	position: absolute;
+	bottom: 10;
+	margin-left: 18;
+}
+
+.confirmButtonHolder input {
+	margin-left: 10px;
 }
 
 #previewWindow {
 	height: 20px;
+	width: 65px;
 }
 
 .simpleFloater {
 	width: 150px;
 	display: none;
 	position: absolute;
-	background-color: grey;
+	background-color: lightgrey;
 	border-style: solid;
 	color: black;
 	font-size: 13px;
+	padding: 3px;
 
 	-webkit-user-select: none; /* Chrome/Safari */        
 	-moz-user-select: none; /* Firefox */

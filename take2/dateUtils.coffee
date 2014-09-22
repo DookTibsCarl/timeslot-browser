@@ -1,6 +1,16 @@
 ###
 bunch of date parsing/formatting functions
 ###
+Date.prototype.stdTimezoneOffset = (() ->
+  jan = new Date(@getFullYear(), 0, 1)
+  jul = new Date(@getFullYear(), 6, 1)
+  return Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset())
+)
+
+Date.prototype.dst = (() ->
+  return this.getTimezoneOffset() < this.stdTimezoneOffset()
+)
+
 class window.TimeslotBrowser.DateUtils
   @ONE_DAY = 24*60*60*1000
 
@@ -9,6 +19,9 @@ class window.TimeslotBrowser.DateUtils
 
   @advanceDateByDays: (d, days) ->
     return new Date(d.getTime() + days*TimeslotBrowser.DateUtils.ONE_DAY)
+
+  @advanceDateByHours: (d, hours) ->
+    return new Date(d.getTime() + hours*60*60*1000)
 
   @advanceDateByMinutes: (d, minutes) ->
     return new Date(d.getTime() + minutes*60*1000)

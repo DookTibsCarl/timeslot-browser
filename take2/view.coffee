@@ -31,12 +31,33 @@ class window.TimeslotBrowser.View
     startOfDay = @dutils.parseHardCap(hardCapStart);
     endOfDay = @dutils.parseHardCap(hardCapEnd);
 
+    ###
+    startOfDay.setMonth(10)
+    endOfDay.setMonth(10)
+    startOfDay.setDate(2)
+    endOfDay.setDate(2)
+    ###
+
+    startBak = startOfDay
+    endBak = endOfDay
+
     daysAheadOfSunday = startOfDay.getDay();
     startOfDay = new Date(startOfDay.getTime() - (@dutils.ONE_DAY * daysAheadOfSunday));
     endOfDay = new Date(endOfDay.getTime() - (@dutils.ONE_DAY * daysAheadOfSunday));
 
     startOfDay = new Date(startOfDay.getTime() + (@dutils.ONE_DAY * screenAdvance * days));
     endOfDay = new Date(endOfDay.getTime() + (@dutils.ONE_DAY * screenAdvance * days));
+
+    if (startBak.dst() and !startOfDay.dst())
+      console.log(startBak + " was dst but " + startOfDay + " is not; bump ahead by an hour")
+      startOfDay = @dutils.advanceDateByHours(startOfDay, 1)
+      endOfDay = @dutils.advanceDateByHours(endOfDay, 1)
+    else if (!startBak.dst() and startOfDay.dst())
+      console.log(startBak + " was NOT dst but " + startOfDay + " is ; bump back an hour")
+      startOfDay = @dutils.advanceDateByHours(startOfDay, -1)
+      endOfDay = @dutils.advanceDateByHours(endOfDay, -1)
+    else
+      console.log "no dst adjustment neeed"
 
     @startOfWeek = startOfDay;
 
@@ -62,11 +83,11 @@ class window.TimeslotBrowser.View
     $("<div/>").attr("id", "timesHolder").addClass("times").appendTo(calHolderEl);
     gridEl = $("<div/>").attr("id", "dayGrid").addClass("dayGrid").appendTo(calHolderEl);
 
-    previewWindowEl = $("<div/>").attr("id", "previewWindow").addClass("simpleFloater").appendTo(@baseElement);
     confirmWindowEl = $("<div/>").attr("id", "confirmWindow").addClass("simpleFloater").appendTo(@baseElement);
+    previewWindowEl = $("<div/>").attr("id", "previewWindow").addClass("simpleFloater").appendTo(@baseElement);
 
     $("<div/>").attr("id", "confirmStatus").appendTo(confirmWindowEl);
-    buttonHolder = $("<div/>").appendTo(confirmWindowEl);
+    buttonHolder = $("<div/>").addClass("confirmButtonHolder").appendTo(confirmWindowEl);
     $("<input/>").attr({type: "button", value: "cancel"}).click(( () => @previewCancel() )).appendTo(buttonHolder);
     $("<input/>").attr({type: "button", value: "ok"}).click(( () => @previewOk() )).appendTo(buttonHolder);
 
@@ -165,7 +186,7 @@ class window.TimeslotBrowser.View
   handleDrag: (dragTo = @isDraggingFrom) ->
     a = @dutils.extractDateFromSlotInfo(@isDraggingFrom.attr("data-slotInfo"))
     b = @dutils.extractDateFromSlotInfo(dragTo.attr("data-slotInfo"))
-    console.log "handling drag, from: " + a + " to " + b
+    # console.log "handling drag, from: " + a + " to " + b
 
     # force on a single day
     b.setFullYear(a.getFullYear())
@@ -179,7 +200,7 @@ class window.TimeslotBrowser.View
     early = if a.getTime() > b.getTime() then b else a;
     late = if a.getTime() > b.getTime() then a else b;
 
-    $("#debugger").html( "handling drag, from: " + early + " to " + late)
+    # $("#debugger").html( "handling drag, from: " + early + " to " + late)
 
     earlyBlock = $("[data-slotInfo='" + @dutils.convertDateForSlotInfo(early) + "']")
 

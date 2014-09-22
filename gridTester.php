@@ -21,8 +21,15 @@ include_once('sql_db.php');
 			console.log("foobar [" + a + "]/[" + b + "]");
 		}
 		$(function() {
+			sep = new Date(2014, 8, 22, 14, 22);
+			add = new Date(sep.getTime() + 91*24*60*60*1000);
+			dec = new Date(2014, 11, 22, 14, 22);
+			console.log("[" + sep + "] [" + sep.dst() + "]");
+			console.log("[" + add + "] [" + add.dst() + "]");
+			console.log("[" + dec + "] [" + dec.dst() + "]");
 			var tsb = new TimeslotBrowser();
 			tsb.initGrid({
+				screensAhead: 26,
 						selectionCallback: foobar,
 							selectionSize: -1,
 						targetSelector:"#tibs",
